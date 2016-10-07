@@ -1,0 +1,8 @@
+CONVENTIONS ADOPTED:
+machine's id is a positive integer
+error code is a positive integer
+error description is a space separated sequence of strings
+QR code is 2 space separated strings: the first denotes the role, the second the number_id
+single instance of the application is made by biding to port 9998 on local host
+mobile stations communicate on socket 9999
+machines communicate on socket from 10000
