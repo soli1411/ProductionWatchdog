@@ -38,7 +38,7 @@ public class MobileStationsHandler {
 				}
 				HashSet<Socket> clientsList=new HashSet<Socket>();
 				while(true) {
-					System.out.println("Waiting for Clients...");
+					System.out.println("Waiting for Mobile Stations Clients...");
 					Socket socket = null;
 					try {
 						socket = serverSocket.accept();

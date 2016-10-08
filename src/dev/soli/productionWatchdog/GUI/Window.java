@@ -34,7 +34,7 @@ public class Window {
 	private static JMenu fileMenu=null,databaseMenu=null,chartMenu=null,helpMenu=null;
 	public static JPanel panel=null;
 	private static URL iconURL = Window.class.getResource("/icon.png");
-	
+
 	/**
 	 * 
 	 * Main window creator and handler.
@@ -51,7 +51,7 @@ public class Window {
 		frame = new JFrame("Production Watchdog");
 		frame.setExtendedState(JFrame.MAXIMIZED_BOTH);//Full screen
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
+
 		ImageIcon icon = new ImageIcon(iconURL);
 		frame.setIconImage(icon.getImage());
 		frame.setLayout(new BorderLayout());
@@ -250,10 +250,29 @@ public class Window {
 		});
 		databaseMenu.add(menuItem);
 
+		//Menu voice: disconnect machine database. Allows the user to disconnect from database.
+		menuItem=new JMenuItem("Disconnect machine database");
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_9, ActionEvent.ALT_MASK));
+		//Action on menu button pressed
+		menuItem.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//Creating a new thread so that the main window can continue to function.
+				Thread t;
+				t = new Thread() {
+					public void run() {
+						MachineDataBaseHandler.disconnect();
+					}
+				};
+				t.start();
+			}
+		});
+		databaseMenu.add(menuItem);
+
 		//Menu voice: show single machine chart. Allows the user to see the database content in a pie or a bar chart.
 		//N.B.:the data displayed on GUI can be out of sync.
 		menuItem=new JMenuItem("Single machine chart");
-		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_9, ActionEvent.ALT_MASK));
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_0, ActionEvent.ALT_MASK));
 		//Action on menu button pressed
 		menuItem.addActionListener(new ActionListener(){
 			@Override
@@ -273,7 +292,7 @@ public class Window {
 		//Menu voice: show comparison chart. Allows the user to see the database content for the selected machines in a bar chart.
 		//N.B.:the data displayed on GUI can be out of sync.
 		menuItem=new JMenuItem("Multiple machines chart");
-		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_0, ActionEvent.ALT_MASK));
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, ActionEvent.ALT_MASK));
 		//Action on menu button pressed
 		menuItem.addActionListener(new ActionListener(){
 			@Override

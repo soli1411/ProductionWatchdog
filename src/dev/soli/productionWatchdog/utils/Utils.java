@@ -28,7 +28,6 @@ import javax.swing.JOptionPane;
 import dev.soli.productionWatchdog.Launcher;
 import dev.soli.productionWatchdog.GUI.Charts;
 import dev.soli.productionWatchdog.GUI.Window;
-import dev.soli.productionWatchdog.database.MachineDataBaseHandler;
 import dev.soli.productionWatchdog.machine.Machine;
 
 /**
@@ -143,7 +142,6 @@ public class Utils {
 				}
 				if (!Launcher.errors.containsKey(Integer.parseInt(line_parts[0]))){
 					Launcher.errors.put(new Integer(line_parts[0]), desc.toString());
-					MachineDataBaseHandler.addError(new Integer(line_parts[0]));
 				}
 			}
 		}
@@ -184,7 +182,7 @@ public class Utils {
 		try (PrintStream out = new PrintStream(new FileOutputStream(machine_list_path))) {
 			for (Integer i:set){
 				if (!Launcher.machines.containsKey(i.toString())){//prevents that the duplicated key
-					Launcher.machines.put(i.toString(), new Machine(i.toString()));//creating a new instance of machine
+					Launcher.machines.put(i.toString(), null);//creating a new instance of machine
 				}
 				out.println(i);
 			}
@@ -194,6 +192,18 @@ public class Utils {
 
 	}
 
+	/**
+	 * 
+	 * Creates a new instance of every machine in Launcher.machines
+	 * 
+	 */
+	public static void startMachines(){
+		
+		for (String i:Launcher.machines.keySet())
+			new Machine(i);
+		
+	}
+	
 	/**
 	 * 
 	 * Loads a machine, selected by the user form the file located at machine_list_path, in the machine map.

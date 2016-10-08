@@ -7,7 +7,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Vector;
 
@@ -17,8 +17,19 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
+import dev.soli.productionWatchdog.Launcher;
 import dev.soli.productionWatchdog.utils.Utils;
 
+/**
+ * 
+ * Database manager class. The database is made so that each machine as its own table, with columns made like these:
+ * date (DateTime, not null, primary key) | article_in_production VARCHAR(50) | number_of_pieces INT UNSIGNED |
+ * error_code INT | error_state BOOLEAN
+ * The entries older than Launcher.daysToKeep days are deleted.
+ * 
+ * @author Lorenzo
+ *
+ */
 public class MachineDataBaseHandler {
 
 	//Dedicated user, password and database;
@@ -39,7 +50,7 @@ public class MachineDataBaseHandler {
 	 * URL, USER and PASSWORD are specified at the top of this class.
 	 * 
 	 */
-	public MachineDataBaseHandler(){
+	public MachineDataBaseHandler() {
 
 		db_connected=false;
 		connection = createConnection();
@@ -48,13 +59,16 @@ public class MachineDataBaseHandler {
 			statement.execute("CREATE DATABASE IF NOT EXISTS "+dbName+";");
 			statement.execute("USE "+dbName+";");
 			try {
-				statement.execute("CREATE TABLE IF NOT EXISTS "+tableName+" ("
-						+ "machine_id INT NOT NULL PRIMARY KEY,"
-						+ "article_in_production VARCHAR(50),"
-						+ "number_of_pieces INT SIGNED,"
-						+ "date_entered TIMESTAMP"
-						+");"
-						);
+				for (String machine_id:Launcher.machines.keySet()) {
+					statement.execute("CREATE TABLE IF NOT EXISTS machine_"+machine_id+" ("
+							+ "date DATETIME NOT NULL PRIMARY KEY,"
+							+ "article_in_production VARCHAR(50),"
+							+ "number_of_pieces INT UNSIGNED,"
+							+ "error_code INT,"
+							+ "error_state TINYINT"
+							+ ");"
+							);
+				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 				System.out.println("Error creating table "+tableName);
@@ -79,7 +93,6 @@ public class MachineDataBaseHandler {
 		try {
 			//Establishing Java-MySQL connection
 			connection = DriverManager.getConnection(URL, USER, Utils.lolledalotwiththisname(PASSWORD));
-			//JOptionPane.showMessageDialog(null, "Database connected sucessfully!");
 			db_connected=true;
 		} catch (SQLException e) {
 			System.out.println("ERROR: Unable to Connect to Database.");
@@ -92,22 +105,15 @@ public class MachineDataBaseHandler {
 
 	/**
 	 * 
-	 * Creates a row in the machine table dedicated to the machine specified by the machine_id.
-	 * If that row doesn't already exist, the number_of_pieces is set to -1.
-	 * 
-	 * @param machine_id
+	 * disconnects from database.
 	 * 
 	 */
-	public void add_machine(String machine_id) {
+	public static void disconnect() {
 
 		try {
-			Timestamp timestamp = new Timestamp(new Date().getTime());
-			Statement statement=connection.createStatement();
-			statement.execute("INSERT IGNORE INTO "+dbName+"."+tableName+" (machine_id, article_in_production, number_of_pieces, date_entered) VALUES("+machine_id+", 'NOTHING',"+-1+",'"+timestamp+"');");
-			System.out.println("Machine "+machine_id+" inserted into database");
+			connection.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			System.out.println("Error adding machine to db");//Probably because the voice already existed in the database
 		}
 
 	}
@@ -115,15 +121,15 @@ public class MachineDataBaseHandler {
 	/**
 	 * 
 	 * @param machine_id
-	 * @returns the number of pieces saved in the database for the specified machine.
+	 * @returns the latest number of pieces saved in the database for the specified machine.
 	 * 
 	 */
-	public int getNumberOfPieces(String machine_id){
+	public int getNumberOfPieces(String machine_id) {
 
 		ResultSet rs=null;
 		try {
 			Statement statement=connection.createStatement();
-			rs = statement.executeQuery("SELECT number_of_pieces FROM "+dbName+"."+tableName+" WHERE machine_id="+machine_id+";");
+			rs = statement.executeQuery("select * from "+dbName+".machine_"+machine_id+" order by date desc limit 1;");//gets the last entry in order of date
 		} catch (SQLException e) {
 			System.out.println("Couldn't retrieve the number of pieces for the machine "+machine_id);
 			e.printStackTrace();
@@ -139,7 +145,7 @@ public class MachineDataBaseHandler {
 		return res;
 
 	}
-	
+
 	/**
 	 * 
 	 * @param machine_id
@@ -151,16 +157,14 @@ public class MachineDataBaseHandler {
 		ResultSet rs=null;
 		try {
 			Statement statement=connection.createStatement();
-			rs = statement.executeQuery("SELECT article_in_production FROM "+dbName+"."+tableName+" WHERE machine_id="+machine_id+";");
+			rs = statement.executeQuery("SELECT article_in_production FROM "+dbName+".machine_"+machine_id+";");
 		} catch (SQLException e) {
 			System.out.println("Couldn't retrieve the article in production for the machine "+machine_id);
 			e.printStackTrace();
 		}
 		String res="NONE";
 		try {
-			while (rs.next()){
-				res = rs.getString("article_in_production");
-			}
+				res = rs.equals(null)?"asd":rs.getString("article_in_production");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -170,46 +174,19 @@ public class MachineDataBaseHandler {
 
 	/**
 	 * 
-	 * @param machine_id
-	 * @param error
-	 * @return the total duration for the error error of machine machine_id
-	 * 
-	 */
-	public static long getErrorDuration(String machine_id,int error){
-
-		ResultSet rs=null;
-		try {
-			Statement statement=connection.createStatement();
-			rs = statement.executeQuery("SELECT error_"+error+" FROM "+dbName+"."+tableName+" WHERE machine_id="+machine_id+";");
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		long res=0;
-		try {
-			while (rs.next()){
-				res = rs.getLong("error_"+error);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return res;
-
-	}
-
-	/**
-	 * 
-	 * Updates the duration of the error occurred to machine machine_id with the sum of the previous stored value and the errorDuration
-	 * and also updates the number_of_pieces made by the machine and the current article that is being produced.
+	 * Adds a new entry to the database of the machine specified that logs the data received as parameters.
 	 * 
 	 * @param machine_id
 	 * @param article_in_production
 	 * @param number_of_pieces
-	 * @param error
-	 * @param errorDuration
-	 * 
+	 * @param error_code
+	 * @param error_state
 	 */
-	public void updateDatabase(String machine_id, String article_in_production, String number_of_pieces, int error, long errorDuration) {
+	public void updateDatabase(String machine_id, String article_in_production, String number_of_pieces, int error_code, int error_state) {
 
+		Date dt = new Date();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String currentTime=sdf.format(dt);
 		Statement statement=null;
 		try {
 			statement = connection.createStatement();
@@ -217,30 +194,11 @@ public class MachineDataBaseHandler {
 			e1.printStackTrace();
 		}
 		try {
-			statement.execute("UPDATE "+dbName+"."+tableName+" SET article_in_production = '"+article_in_production+"' WHERE machine_id = "+machine_id+";");
-			statement.execute("UPDATE "+dbName+"."+tableName+" SET error_"+error+" = error_"+error+" + "+errorDuration+", number_of_pieces="+number_of_pieces+" WHERE machine_id = "+machine_id+";");
+			statement.execute("INSERT INTO "+dbName+".machine_"+machine_id+" (date,article_in_production,number_of_pieces,error_code,error_state) "
+					+ "VALUES('"+currentTime+"','"+article_in_production+"',"+number_of_pieces+","+error_code+","+error_state+");");
 		} catch (SQLException e) {
 			e.printStackTrace();
 			System.out.println("Couldn't update database!");
-		}
-
-	}
-	
-	/**
-	 * 
-	 * Creates a column for the error passed as parameter in the data base.
-	 * 
-	 * @param error
-	 * 
-	 */
-	public static void addError(int error){
-
-		try {
-			Statement statement=connection.createStatement();
-			statement.execute("ALTER TABLE "+dbName+"."+tableName+" ADD error_"+error+" BIGINT SIGNED DEFAULT 0;");//the field is of type long so the duration is stored as seconds elapsed
-		} catch (SQLException e) {
-			e.printStackTrace();
-			System.out.println("Couldn't add column to table "+tableName);//probably because it was already added
 		}
 
 	}
@@ -273,7 +231,7 @@ public class MachineDataBaseHandler {
 	 * 
 	 */
 	public static void showDataBaseOnGui() {
-
+//FIXME
 		Statement statement = null;
 		ResultSet rs = null;
 		try{

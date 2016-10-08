@@ -9,7 +9,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class MobileStationServer extends Thread{
-
+//FIXME all!
 	private Socket socket=null;
 	
 	/**

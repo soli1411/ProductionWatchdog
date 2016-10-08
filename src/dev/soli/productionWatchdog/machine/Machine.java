@@ -33,13 +33,14 @@ public class Machine {
 	private String log_path;
 
 	//Errors variables
-	private enum State { RUNNING, IN_ERRROR, NO_INFORMATION };
-	private State state;
-	private boolean errorState=true;
+	private enum MachineState { RUNNING, IN_ERRROR, RESET, NO_CONNECTION };
+	private MachineState state;
+	public boolean errorState=true;
 	private static final long TIME_FOR_RUNNING_STATE=4000000000L;//after this time (in nanoseconds) elapses from an error event 
 	//and the machine has been running, it can be considered running.
 	private long timeAtLastErrorEnd=0;
-	public int errorHappened=0;
+	public int errorHappened=-1;
+	public int error_info=-1;
 
 	//Connection variables
 	private static final int portOffset=3000;//port number at which the ports starts to be assigned. 
@@ -69,12 +70,8 @@ public class Machine {
 	public Machine(String machine_id) {
 
 		this.machine_id=machine_id;
-		this.state=State.NO_INFORMATION;
+		this.state=MachineState.NO_CONNECTION;
 		log_path=Launcher.logDirectory+"/Machine_"+this.machine_id+"/"+Utils.getDayAndMonth()+".txt";
-
-		//Database
-		if (MachineDataBaseHandler.is_db_connected())
-			Launcher.machineDatabaseHandler.add_machine(machine_id);
 
 		//Graphic
 		addMachineOnGui();//also retrieves value of number of pieces made from database
@@ -95,28 +92,43 @@ public class Machine {
 	 */
 	private void handleError(int error,Boolean running) {
 
-		if (state==State.RUNNING){
+		errorHappened=error;
+
+		switch (state) {
+		case IN_ERRROR:
+			error_info=1;
+			break;
+		case RUNNING:
+			error_info=0;
+			break;
+		case RESET:
+			error_info=-1;
+			break;
+		case NO_CONNECTION:
+			error_info=-2;
+			break;
+		default:
+			break;
+		}
+		if (state==MachineState.RUNNING){
 			if (System.nanoTime()-timeAtLastErrorEnd>TIME_FOR_RUNNING_STATE) {//Actually running
-				errorHappened=-1;
 				error_label.setText("Running");
 				panel.setBackground(new Color(238,238,238));
 				if (errorState){
-					log("Production started "+number_of_pieces_label.getText());
 					errorState=false;
+					log("Production started "+number_of_pieces_label.getText());
 				}
 			} else {//Running, but not sure if for testing or if it's all OK
-				//Showing on GUI this state
 				error_label.setText("Running, but has recently stopped");
 				panel.setBackground(new Color(255,255,0));
 			}
-		} else if (state==State.IN_ERRROR) {
+		} else if (state==MachineState.IN_ERRROR) {
 			timeAtLastErrorEnd=System.nanoTime();
 			String errorDescription=Launcher.errors.get(error);
 			error_label.setText(errorDescription);
 			panel.setBackground(Utils.colors[error]);
 			if (errorState==false) {//Switched from running to stopped
 				errorState=true;
-				errorHappened=error;
 				System.nanoTime();
 				//Showing which error happened on GUI
 				log("Production stopped beacuse of error "+error+" - "+errorDescription+" - "+number_of_pieces_label.getText());
@@ -142,6 +154,7 @@ public class Machine {
 					serverSocket.setReuseAddress(true);
 					serverSocket.setSoTimeout(socket_timeout);//After socket_timeout milliseconds of a non-responding connection the socket is closed
 				} catch (IOException e) {
+					state=MachineState.NO_CONNECTION;
 					error_label.setText("Connection failed, reconnect manually");
 					System.out.println("Cannot create socket on port "+port);//Usually happens if port is already in use
 				}
@@ -157,11 +170,13 @@ public class Machine {
 				} catch (InterruptedIOException iioe) {
 					System.out.println("Connection failed");
 					connected=false;
+					state=MachineState.NO_CONNECTION;
 					error_label.setText("Connection failed, reconnect manually");
 					panel.setBackground(new Color(255,0,0));
 				} catch (IOException e1) {
 					System.out.println("Connection failed");
 					connected=false;
+					state=MachineState.NO_CONNECTION;
 					error_label.setText("Connection failed, reconnect manually");
 					panel.setBackground(new Color(255,0,0));
 				}
@@ -193,14 +208,14 @@ public class Machine {
 					dataInputStream.close();
 					System.out.println("Client isn't responding...\nTrying to restart connection...");
 					connected=false;
+					state=MachineState.NO_CONNECTION;
 					error_label.setText("Connection failed! Trying to restart connection...");
 					panel.setBackground(new Color(255,0,0));
 					reconnect();//Trying to reconnect
 					e.printStackTrace();
 					break;
 				}
-				System.out.print("state= "+running+" ");
-				state=running?State.RUNNING:State.IN_ERRROR;
+				state=running?MachineState.RUNNING:MachineState.IN_ERRROR;
 				number_of_pieces_label.setText(number_of_pieces.toString());
 				error_label.setText(Launcher.errors.get(number_of_error));
 				handleError(number_of_error,running);
@@ -208,6 +223,7 @@ public class Machine {
 		} catch (IOException e) {
 			System.out.println("CONNECTION INTERRUPTED...\nTrying to restart connection...");
 			connected=false;
+			state=MachineState.NO_CONNECTION;
 			error_label.setText("Connection failed! Trying to restart connection...");
 			panel.setBackground(new Color(255,0,0));
 			reconnect();//Trying to reconnect automatically because it can be that the connection isn't stable
@@ -233,6 +249,7 @@ public class Machine {
 				if (dataInputStream!=null)
 					dataInputStream.close();
 				connected=false;
+				state=MachineState.NO_CONNECTION;
 				System.out.println("Closed connection with machine "+machine_id);
 				error_label.setText("Reconnecting...");
 				panel.setBackground(new Color(255,255,0));
@@ -246,6 +263,7 @@ public class Machine {
 
 	}
 
+	//TODO: finish this method with the new database tables configuration.
 	/**
 	 * 
 	 * @param machine_id
@@ -255,9 +273,7 @@ public class Machine {
 	public static HashMap<String,Long> getErrorDurations(String machine_id){
 
 		HashMap<String, Long> errorDurations=new HashMap<String, Long>();//HashMap for holding error description and error duration
-		for (Integer key:Launcher.errors.keySet()){
-			errorDurations.put(Launcher.errors.get(key), MachineDataBaseHandler.getErrorDuration(machine_id, key));
-		}
+
 		return errorDurations;
 
 	}
@@ -267,16 +283,14 @@ public class Machine {
 	 * Resets the errors duration and the number of pieces made by the current machine.
 	 * 
 	 */
-	public void reset(){
+	public void reset() {
 
 		article_in_production_label.setText("NOTHING");
 		number_of_pieces_label.setText(""+-1);
-		errorHappened=0;
+		errorHappened=-1;
 		errorState=false;
-		//Errors
-		for (Integer e : Launcher.errors.keySet()){
-			Launcher.machineDatabaseHandler.updateDatabase(machine_id, article_in_production_label.getText(), number_of_pieces_label.getText(), e, -MachineDataBaseHandler.getErrorDuration(machine_id, e));
-		}
+		state=MachineState.RESET;
+		log("Reset - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText());
 
 	}
 
@@ -305,6 +319,7 @@ public class Machine {
 		} catch (FileNotFoundException e) {
 			System.out.println("File not found!");
 		}
+		Launcher.machineDatabaseHandler.updateDatabase(machine_id, article_in_production_label.getText(), number_of_pieces_label.getText(), errorHappened, error_info);
 
 	}
 
@@ -326,7 +341,7 @@ public class Machine {
 		panel=new JPanel();
 		JLabel machine_id_label=new JLabel("Machine_"+machine_id);
 		panel.add(machine_id_label);
-		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(machine_id));
+		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(MachineDataBaseHandler.is_db_connected()?machine_id:"Couldn't retrieve value from db"));
 		panel.add(article_in_production_label);
 		number_of_pieces_label=new JLabel("NaN");
 		//getting data from database
