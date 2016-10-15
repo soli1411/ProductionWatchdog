@@ -212,7 +212,7 @@ public class Window {
 
 		//Menu voice: show machine's database content. Allows the user to see the machines related database content.
 		//N.B.:the data displayed on GUI can be out of sync.
-		menuItem=new JMenuItem("Show machines database");
+		menuItem=new JMenuItem("Show machine database");
 		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_7, ActionEvent.ALT_MASK));
 		//Action on menu button pressed
 		menuItem.addActionListener(new ActionListener(){
@@ -222,7 +222,7 @@ public class Window {
 				Thread t;
 				t = new Thread() {
 					public void run() {
-						MachineDataBaseHandler.showDataBaseOnGui();
+						Utils.showSingleMachineDataBaseOnGui();
 					}
 				};
 				t.start();

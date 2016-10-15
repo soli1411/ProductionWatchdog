@@ -40,7 +40,7 @@ public class Machine {
 	//and the machine has been running, it can be considered running.
 	private long timeAtLastErrorEnd=0;
 	public int errorHappened=-1;
-	public int error_info=-1;
+	public int error_info=-2;
 
 	//Connection variables
 	private static final int portOffset=3000;//port number at which the ports starts to be assigned. 
@@ -116,7 +116,8 @@ public class Machine {
 				panel.setBackground(new Color(238,238,238));
 				if (errorState){
 					errorState=false;
-					log("Production started "+number_of_pieces_label.getText());
+					log("Production started "+number_of_pieces_label.getText(),
+							new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date(new Date().getTime()-TIME_FOR_RUNNING_STATE/1000000)));
 				}
 			} else {//Running, but not sure if for testing or if it's all OK
 				error_label.setText("Running, but has recently stopped");
@@ -131,7 +132,8 @@ public class Machine {
 				errorState=true;
 				System.nanoTime();
 				//Showing which error happened on GUI
-				log("Production stopped beacuse of error "+error+" - "+errorDescription+" - "+number_of_pieces_label.getText());
+				log("Production stopped beacuse of error "+error+" - "+errorDescription+" - "+number_of_pieces_label.getText(),
+						new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 			}
 
 		}
@@ -203,6 +205,7 @@ public class Machine {
 					socket.setSoTimeout(socket_timeout);
 					number_of_pieces=dataInputStream.readInt(); //Type can be changed, but the change must be here and in the plc's code
 					number_of_error=dataInputStream.readInt();//Type can be changed, but the change must be here and in the plc's code
+					number_of_error=number_of_error==0?43:number_of_error;//Changing mapping of error 0 in the machine for possible problems avoidance
 					running=dataInputStream.readBoolean();//Type can be changed, but the change must be here and in the plc's code
 				} catch (InterruptedIOException e) {
 					dataInputStream.close();
@@ -263,6 +266,33 @@ public class Machine {
 
 	}
 
+	/**
+	 * 
+	 * Closes the connection with the machine.
+	 * 
+	 */
+	public void disconnect(){
+
+		if (connected){
+			try {
+				if (socket!=null && !socket.isClosed())
+					socket.close();
+				if (!serverSocket.isClosed())
+					serverSocket.close();
+				if (dataInputStream!=null)
+					dataInputStream.close();
+				connected=false;
+				state=MachineState.NO_CONNECTION;
+				error_info=-2;
+				System.out.println("Closed connection with machine "+machine_id);
+				error_label.setText("Disconnected...");
+				panel.setBackground(new Color(255,255,0));
+			} catch (IOException e) {
+				System.out.println("Couldn't close connection with machine "+machine_id);
+			}
+		}
+	}
+
 	//TODO: finish this method with the new database tables configuration.
 	/**
 	 * 
@@ -285,12 +315,14 @@ public class Machine {
 	 */
 	public void reset() {
 
-		article_in_production_label.setText("NOTHING");
-		number_of_pieces_label.setText(""+-1);
+		article_in_production_label.setText("RESETTED");
+		number_of_pieces_label.setText("0");
 		errorHappened=-1;
+		error_info=-1;
 		errorState=false;
 		state=MachineState.RESET;
-		log("Reset - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText());
+		log("Reset - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
+				new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 
 	}
 
@@ -299,7 +331,7 @@ public class Machine {
 	 * Logs to file the state of the machine: it writes the number of pieces made until now and the state of error if there's one.
 	 * 
 	 */
-	public void log(String logDescription) {
+	public void log(String logDescription, String timeStamp) {
 
 		log_path=Launcher.logDirectory+"/Machine_"+this.machine_id+"/"+Utils.getDayAndMonth()+".txt";
 		File logFile = new File(log_path);
@@ -312,7 +344,6 @@ public class Machine {
 			}
 		}
 		try (PrintStream out = new PrintStream(new FileOutputStream(log_path,true))) {
-			String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 			if (!number_of_pieces_label.getText().equals("NaN"))
 				out.println(timeStamp + " machine " + machine_id +" "+logDescription);
 			out.close();
@@ -340,14 +371,15 @@ public class Machine {
 
 		panel=new JPanel();
 		JLabel machine_id_label=new JLabel("Machine_"+machine_id);
+		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(machine_id));
+		error_label=new JLabel("Connecting...");
 		panel.add(machine_id_label);
 		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(MachineDataBaseHandler.is_db_connected()?machine_id:"Couldn't retrieve value from db"));
 		panel.add(article_in_production_label);
-		number_of_pieces_label=new JLabel("NaN");
 		//getting data from database
-		number_of_pieces_label.setText(""+Launcher.machineDatabaseHandler.getNumberOfPieces(machine_id));//sets the label to "-1" if there were no fata in database
+		if (Integer.parseInt(number_of_pieces_label.getText())<0)
+			number_of_pieces_label.setText("0");//sets the label to "0" if there were no data in database
 		panel.add(number_of_pieces_label);
-		error_label=new JLabel("Connecting...");
 		panel.add(error_label);
 		panel.setBackground(new Color(255,255,0));
 		JButton button=new JButton("RECONNECT!");

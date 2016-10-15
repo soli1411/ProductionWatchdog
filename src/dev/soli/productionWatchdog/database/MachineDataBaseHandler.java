@@ -35,7 +35,7 @@ public class MachineDataBaseHandler {
 	//Dedicated user, password and database;
 	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
 	//private static final String dbName="mareca_produzione";
-	private static final String URL = "jdbc:mysql://127.0.0.1:3306/mareca";
+	private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
 	private static final String dbName="mareca";
 	private static final String USER = "mareca";
 	private static final String PASSWORD="|VBSQQA_]_";
@@ -97,6 +97,7 @@ public class MachineDataBaseHandler {
 		} catch (SQLException e) {
 			System.out.println("ERROR: Unable to Connect to Database.");
 			JOptionPane.showMessageDialog(null, "ERROR: Unable to Connect to Database.");
+			e.printStackTrace();
 			db_connected=false;
 		}
 		return connection;
@@ -164,7 +165,9 @@ public class MachineDataBaseHandler {
 		}
 		String res="NONE";
 		try {
-				res = rs.equals(null)?"asd":rs.getString("article_in_production");
+			while (rs.next()){
+				res = rs.getString("article_in_production");
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -230,13 +233,13 @@ public class MachineDataBaseHandler {
 	 * Shows the database content in a JTable.
 	 * 
 	 */
-	public static void showDataBaseOnGui() {
-//FIXME
+	public static void showDataBaseOnGui(String machine_id) {
+
 		Statement statement = null;
 		ResultSet rs = null;
 		try{
 			statement = connection.createStatement();
-			String s = "select * from machines;";
+			String s = "select * from machine_"+machine_id+";";
 			rs = statement.executeQuery(s);
 			ResultSetMetaData rsmt = rs.getMetaData();
 			int c = rsmt.getColumnCount();

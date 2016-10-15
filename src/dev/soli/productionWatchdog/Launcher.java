@@ -5,6 +5,8 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -34,8 +36,7 @@ import dev.soli.productionWatchdog.utils.Utils;
  * 
  */
 public class Launcher {
-	
-	//TODO: handle reset from machine(PLC).
+
 	//TODO: make all machines communicate on the same port, they have different IPs, so it's not going to be a problem. 
 	//For now use different ports, so that you can simulate all the machines on local host.
 	//TODO: finish employee database and mobile stations part.
@@ -47,7 +48,7 @@ public class Launcher {
 	private static ServerSocket singleInstanceServerSocket;
 
 	//Refresh_time for the tick method (in milliseconds).
-	private static final int TICK_TIME=600000;//10 minutes.
+	private static final int TICK_TIME=600000;//10 minutes
 
 	//Log directory path
 	public static final String logDirectory="C:/Users/Public/Documents/ProductionWatchdog/Logs";
@@ -96,10 +97,10 @@ public class Launcher {
 
 		//Creating new instances of the machines
 		Utils.startMachines();
-		
+
 		//Starting connections with mobile stations
 		mobileStationsHandler=new MobileStationsHandler();//TODO: finish this part
-		
+
 		//Logging and updating stored data
 		Utils.deleteFilesOlderThanNdays(DAYSTOKEEP, logDirectory);//deletes log files older than daysToKeep days.
 
@@ -158,8 +159,9 @@ public class Launcher {
 					}
 					System.out.println("Running "+Thread.activeCount()+" Threads");
 					for (Machine m:machines.values()){
-						m.log("Tick - pieces="+m.number_of_pieces_label.getText()+" error="+m.error_label.getText());
-						System.out.println("machine="+m.machine_id+" NUMBER OF PIECES="+m.number_of_pieces_label.getText());
+						System.out.println(m==null?"asd":"machine="+m.machine_id);
+						m.log("Tick - pieces="+m.number_of_pieces_label.getText()+" error="+m.error_label.getText(),
+								new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 					}
 				}
 
@@ -181,7 +183,9 @@ public class Launcher {
 			public void run() {
 				//logging and saving to database
 				for (Machine m:machines.values()){
-					m.log("Closing application - pieces="+m.number_of_pieces_label.getText()+" error="+m.error_label.getText());
+					m.disconnect();
+					m.log("Closing application - pieces="+m.number_of_pieces_label.getText()+" error="+m.error_label.getText(),
+							new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 				}
 				//closing database connection
 				if (MachineDataBaseHandler.is_db_connected())

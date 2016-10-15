@@ -28,6 +28,7 @@ import javax.swing.JOptionPane;
 import dev.soli.productionWatchdog.Launcher;
 import dev.soli.productionWatchdog.GUI.Charts;
 import dev.soli.productionWatchdog.GUI.Window;
+import dev.soli.productionWatchdog.database.MachineDataBaseHandler;
 import dev.soli.productionWatchdog.machine.Machine;
 
 /**
@@ -199,8 +200,9 @@ public class Utils {
 	 */
 	public static void startMachines(){
 		
-		for (String i:Launcher.machines.keySet())
-			new Machine(i);
+		for (String i:Launcher.machines.keySet()){
+			Launcher.machines.put(i, new Machine(i));
+		}
 		
 	}
 	
@@ -351,6 +353,22 @@ public class Utils {
 				}
 			}
 		}
+	}
+
+	public static void showSingleMachineDataBaseOnGui() {
+		//letting the user choose which machine to display
+		String machine_list=Utils.machine_list_path;
+		File f = new File(machine_list);
+		String file=null;
+		if(f.exists() && !f.isDirectory())
+			file=Utils.loadFileAsString(machine_list);
+		String textStr[] = file.split("\\r\\n|\\n|\\r");
+		String machine_id = (String) JOptionPane.showInputDialog(null,"Choose a machine for the table:",
+				"Choose a machine",JOptionPane.QUESTION_MESSAGE,null,textStr,textStr[1]);
+		if (!machine_id.equals(null)){
+			MachineDataBaseHandler.showDataBaseOnGui(machine_id);
+		}
+		
 	}
 
 }
