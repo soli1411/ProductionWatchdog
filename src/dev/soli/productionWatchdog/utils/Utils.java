@@ -2,9 +2,6 @@ package dev.soli.productionWatchdog.utils;
 
 import java.awt.Color;
 import java.awt.Desktop;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,21 +9,13 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.swing.AbstractButton;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
 import dev.soli.productionWatchdog.Launcher;
-import dev.soli.productionWatchdog.GUI.Charts;
 import dev.soli.productionWatchdog.GUI.Window;
 import dev.soli.productionWatchdog.database.MachineDataBaseHandler;
 import dev.soli.productionWatchdog.machine.Machine;
@@ -182,8 +171,8 @@ public class Utils {
 		//Rewriting the content of the file so that it's sorted and with no repetition and adding new machines to the list of the listened ones.
 		try (PrintStream out = new PrintStream(new FileOutputStream(machine_list_path))) {
 			for (Integer i:set){
-				if (!Launcher.machines.containsKey(i.toString())){//prevents that the duplicated key
-					Launcher.machines.put(i.toString(), null);//creating a new instance of machine
+				if (!Launcher.machines.containsKey(i)){//prevents that the duplicated key
+					Launcher.machines.put(i, null);//creating a new instance of machine
 				}
 				out.println(i);
 			}
@@ -200,7 +189,7 @@ public class Utils {
 	 */
 	public static void startMachines(){
 		
-		for (String i:Launcher.machines.keySet()){
+		for (int i:Launcher.machines.keySet()){
 			Launcher.machines.put(i, new Machine(i));
 		}
 		
@@ -222,90 +211,14 @@ public class Utils {
 		if(f.exists() && !f.isDirectory())
 			file=Utils.loadFileAsString(machine_list);
 		String textStr[] = file.split("\\r\\n|\\n|\\r");
-		String machine_id = (String) JOptionPane.showInputDialog(null,"Choose a machine to add:",
-				"Machine to add",JOptionPane.QUESTION_MESSAGE,null,textStr,textStr[1]); 
+		Integer machine_id = Integer.parseInt((String) JOptionPane.showInputDialog(null,"Choose a machine to add:",
+				"Machine to add",JOptionPane.QUESTION_MESSAGE,null,textStr,textStr[1])); 
 		if (Launcher.machines.containsKey(machine_id)){
 			JOptionPane.showMessageDialog(Window.frame,"Already added!");
-		} else if ((machine_id != null) && (machine_id.length() > 0)){
+		} else if ((machine_id!=null)){
 			Launcher.machines.put(machine_id, new Machine(machine_id));
 		}
 		loadMachinesFromFile();
-
-	}
-
-	/**
-	 * 
-	 * Displays a (pie or bar) chart of the error durations of a user selected machine in a separated JFrame.
-	 * 
-	 */
-	public static void showSingleMachineChart(){
-
-		//letting the user choose which machine to display
-		String machine_list=Utils.machine_list_path;
-		File f = new File(machine_list);
-		String file=null;
-		if(f.exists() && !f.isDirectory())
-			file=Utils.loadFileAsString(machine_list);
-		String textStr[] = file.split("\\r\\n|\\n|\\r");
-		String machine_id = (String) JOptionPane.showInputDialog(null,"Choose a machine for the chart:",
-				"Choose a machine",JOptionPane.QUESTION_MESSAGE,null,textStr,textStr[1]);
-		if (!machine_id.equals(null)){
-			//loading the data referred to the errors that has to be displayed in the chart
-			HashMap<String, Long> errorDurations=Machine.getErrorDurations(machine_id);//HashMap for holding error description and error duration
-			//actually making the chart
-			Charts.showSingleMachineChart(machine_id, errorDurations);
-		}
-		
-	}
-
-	/**
-	 * 
-	 * Displays a (bar) chart (that can be print or saved as .PNG) of the error durations of user selected machines.
-	 * 
-	 */
-	public static void showMultipleMachineChart(){
-
-		//letting the user choose which machines to display
-		String machine_list=Utils.machine_list_path;
-		File f = new File(machine_list);
-		String file=null;
-		if(f.exists() && !f.isDirectory())
-			file=Utils.loadFileAsString(machine_list);
-		String textStr[] = file.split("\\r\\n|\\n|\\r");
-		//creating GUI to select machines
-		JFrame frame = new JFrame("Choose machines for the chart");
-		frame.setLayout(new GridLayout(0,1));
-		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		frame.setLocationRelativeTo(null);
-		frame.add(new JLabel("Choose machines for the chart"));
-		ArrayList<String> machinesToChart=new ArrayList<String>();//holds the temporary list of the IDs of users's selected machines
-		for (String s:textStr){
-			JCheckBox cb=new JCheckBox(s);
-			ActionListener actionListener = new ActionListener() {
-				public void actionPerformed(ActionEvent actionEvent) {
-					AbstractButton abstractButton = (AbstractButton) actionEvent.getSource();
-					boolean selected = abstractButton.getModel().isSelected();
-					if (selected){
-						machinesToChart.add(s);
-					} else {
-						machinesToChart.remove(s);
-					}
-				}
-			};
-			cb.addActionListener(actionListener);
-			frame.add(cb);
-		}
-		JButton button=new JButton("Done!");
-		button.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				Charts.showMultipleMachineChart(machinesToChart);
-			}
-		});
-		frame.add(button);
-		frame.pack();
-		frame.setLocationRelativeTo(null);
-		frame.setVisible(true);
 
 	}
 

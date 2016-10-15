@@ -1,6 +1,10 @@
 package dev.soli.productionWatchdog.GUI;
 
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -10,7 +14,11 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
+import javax.swing.AbstractButton;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -26,33 +34,39 @@ import org.jfree.data.time.SimpleTimePeriod;
 import org.jfree.data.time.TimePeriodValues;
 import org.jfree.data.time.TimePeriodValuesCollection;
 import org.jfree.ui.ApplicationFrame;
-import org.jfree.ui.RefineryUtilities;
 
+import dev.soli.productionWatchdog.Launcher;
 import dev.soli.productionWatchdog.database.MachineDataBaseHandler;
+import dev.soli.productionWatchdog.utils.Utils;
 
-@SuppressWarnings("serial")
-public class TimelineCharts extends ApplicationFrame {
+public class TimelineCharts {
 
-	public TimelineCharts(String title,String startDate, String endDate) {
-		super(title);
-		TimePeriodValuesCollection timeLineDataset=createTimeLineDataset(startDate,endDate);
-		showTotalErrorDuration("1");
-		JFreeChart chart=ChartFactory.createXYBarChart(
-				title,
-				"Timeline->",
-				true,
-				"Error state",
-				timeLineDataset,
-				PlotOrientation.VERTICAL,
-				true,
-				true,
-				false
-				);
-		chart.getXYPlot().getRangeAxis().setStandardTickUnits(NumberAxis.createIntegerTickUnits());
-		ChartPanel chartPanel = new ChartPanel(chart);
-		chartPanel.setMouseZoomable( true , true );  
-		setLocationRelativeTo(null);     
-		setContentPane( chartPanel );
+	//TODO: documentation of this part
+	
+	public static void displayTimelineCharts(ArrayList<String> machinesToChart,String startDate, String endDate) {
+		for (String machine_id:machinesToChart){
+			JFrame f=new JFrame("Machine_"+machine_id+" timeline chart");
+			TimePeriodValuesCollection timeLineDataset=createTimeLineDataset(machine_id,startDate,endDate);
+			JFreeChart chart=ChartFactory.createXYBarChart(
+					"Machine_"+machine_id+" timeline chart",
+					"Timeline->",
+					true,
+					"Error state",
+					timeLineDataset,
+					PlotOrientation.VERTICAL,
+					true,
+					true,
+					false
+					);
+			chart.getXYPlot().getRangeAxis().setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+			ChartPanel chartPanel = new ChartPanel(chart);
+			chartPanel.setMouseZoomable(true,true);
+			f.setDefaultCloseOperation(ApplicationFrame.DISPOSE_ON_CLOSE);
+			f.setLocationRelativeTo(null);  
+			f.setContentPane(chartPanel);
+			f.setExtendedState(ApplicationFrame.MAXIMIZED_BOTH);
+			f.setVisible(true);
+		}
 	}
 
 	private static String convertDuration(long duration){
@@ -63,8 +77,7 @@ public class TimelineCharts extends ApplicationFrame {
 		return days+":"+hours%24L+":"+minutes%60L+":"+seconds%60L;
 	}
 
-	public static void showTotalErrorDuration(String machine_id) {
-		new MachineDataBaseHandler();
+	private static void showTotalErrorDuration(int machine_id) {
 		Statement statement=null;
 		ResultSet rs=null;
 		try{
@@ -140,15 +153,12 @@ public class TimelineCharts extends ApplicationFrame {
 
 	}
 
-	private TimePeriodValuesCollection createTimeLineDataset(String startDate, String endDate) 
-	{
-		new MachineDataBaseHandler();//TODO: remove this and refer to the local instance
-
-		TimePeriodValuesCollection dataset = new TimePeriodValuesCollection();      
+	private static TimePeriodValuesCollection createTimeLineDataset(String machine_id,String startDate, String endDate) {
+		TimePeriodValuesCollection dataset = new TimePeriodValuesCollection();
 		Statement c=null;
 		try {
 			c=MachineDataBaseHandler.getConnection().createStatement();
-			ResultSet rs=c.executeQuery("select * from mareca.machine_1 where date>\""+startDate+"\" and date<\""+endDate+"\";");
+			ResultSet rs=c.executeQuery("select * from mareca.machine_"+machine_id+" where date>\""+startDate+"\" and date<\""+endDate+"\";");
 			TimePeriodValues series=null;
 			ArrayList<Second> sec=null;
 			ArrayList<Integer> states=null;
@@ -186,15 +196,87 @@ public class TimelineCharts extends ApplicationFrame {
 		return dataset;
 	}
 
-	//TODO: context menu with a form that allows user to replot chart in place changing parameters.
-	//TODO: form for get user input of dates and machine of interest.
-	public static void main( final String[ ] args )
-	{
-		final String title = "Time Series Management";         
-		final TimelineCharts demo = new TimelineCharts(title,"2014-9-12 18","2017-10-15 18:41:40");
-		demo.pack( );         
-		RefineryUtilities.positionFrameRandomly( demo );         
-		demo.setVisible( true );
+	/**
+	 * 
+	 * Displays a JTable of the error durations of a user selected machine in a separated JFrame.
+	 * 
+	 */
+	public static void showSingleMachineDurationTable(){
+
+		//letting the user choose which machine to display
+		String machine_list=Utils.machine_list_path;
+		File f = new File(machine_list);
+		String file=null;
+		if(f.exists() && !f.isDirectory())
+			file=Utils.loadFileAsString(machine_list);
+		String textStr[] = file.split("\\r\\n|\\n|\\r");
+		int machine_id = Integer.parseInt((String) JOptionPane.showInputDialog(null,"Choose a machine for the chart:",
+				"Choose a machine",JOptionPane.QUESTION_MESSAGE,null,textStr,textStr[1]));
+		if (Launcher.machines.containsKey(machine_id)){
+			showTotalErrorDuration(machine_id);
+		} else {
+			JOptionPane.showMessageDialog(null, "ERROR: Machine "+machine_id+" not found!");
+		}
+
 	}
+
+	/**
+	 * 
+	 * Displays a (bar) chart (that can be print or saved as .PNG) of the error durations of user selected machines.
+	 * 
+	 */
+	public static void showMultipleMachineChart(){
+
+		//letting the user choose which machines to display
+		String machine_list=Utils.machine_list_path;
+		File f = new File(machine_list);
+		String file=null;
+		if(f.exists() && !f.isDirectory())
+			file=Utils.loadFileAsString(machine_list);
+		String textStr[] = file.split("\\r\\n|\\n|\\r");
+		//creating GUI to select machines
+		JFrame frame = new JFrame("Choose machines for the chart");
+		frame.setLayout(new GridLayout(0,1));
+		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		frame.setLocationRelativeTo(null);
+		frame.add(new JLabel("Choose machines for the chart"));
+		ArrayList<String> machinesToChart=new ArrayList<String>();//holds the temporary list of the IDs of users's selected machines
+		for (String s:textStr){
+			JCheckBox cb=new JCheckBox(s);
+			ActionListener actionListener = new ActionListener() {
+				public void actionPerformed(ActionEvent actionEvent) {
+					AbstractButton abstractButton = (AbstractButton) actionEvent.getSource();
+					boolean selected = abstractButton.getModel().isSelected();
+					if (selected){
+						machinesToChart.add(s);
+					} else {
+						machinesToChart.remove(s);
+					}
+				}
+			};
+			cb.addActionListener(actionListener);
+			frame.add(cb);
+		}
+		JButton button=new JButton("Done!");
+		button.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				frame.dispose();
+				String startDate=JOptionPane.showInputDialog("Please insert a start date in yyyy-MM-dd hh:mm:ss format.\nSelect help for more informations");
+				if (!startDate.equals(null) && !startDate.equals("")){
+					String endDate=JOptionPane.showInputDialog("Please insert an end date in yyyy-MM-dd hh:mm:ss format.\nSelect help for more informations");
+					if (!endDate.equals(null) && !endDate.equals("")){
+						displayTimelineCharts(machinesToChart,startDate,endDate);
+					}
+				}
+			}
+		});
+		frame.add(button);
+		frame.pack();
+		frame.setLocationRelativeTo(null);
+		frame.setVisible(true);
+
+	}
+
 }
 

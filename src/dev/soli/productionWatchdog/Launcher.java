@@ -55,7 +55,7 @@ public class Launcher {
 	public static final int DAYSTOKEEP=32;//number of days that the logs are held into memory. If the files are older, then they are deleted.
 
 	//TreeMap of <machine_id,machine object>, used to keep track of connected machines.
-	public static Map<String,Machine> machines=new TreeMap<String, Machine>();
+	public static Map<Integer,Machine> machines=new TreeMap<Integer, Machine>();
 
 	//TreeMap of <error_id,error description>, used to keep track of errors
 	public static NavigableMap<Integer,String> errors=new TreeMap<Integer, String>();
@@ -93,7 +93,7 @@ public class Launcher {
 
 		//Starting connection with database
 		machineDatabaseHandler=new MachineDataBaseHandler();
-		mobileStationDatabaseHandler=new MobileStationDataBaseHandler();//TODO: needed?? where? why?
+		mobileStationDatabaseHandler=new MobileStationDataBaseHandler();
 
 		//Creating new instances of the machines
 		Utils.startMachines();

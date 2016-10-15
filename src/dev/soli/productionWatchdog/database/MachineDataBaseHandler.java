@@ -59,7 +59,7 @@ public class MachineDataBaseHandler {
 			statement.execute("CREATE DATABASE IF NOT EXISTS "+dbName+";");
 			statement.execute("USE "+dbName+";");
 			try {
-				for (String machine_id:Launcher.machines.keySet()) {
+				for (int machine_id:Launcher.machines.keySet()) {
 					statement.execute("CREATE TABLE IF NOT EXISTS machine_"+machine_id+" ("
 							+ "date DATETIME NOT NULL PRIMARY KEY,"
 							+ "article_in_production VARCHAR(50),"
@@ -101,21 +101,6 @@ public class MachineDataBaseHandler {
 			db_connected=false;
 		}
 		return connection;
-
-	}
-
-	/**
-	 * 
-	 * disconnects from database.
-	 * 
-	 */
-	public static void disconnect() {
-
-		try {
-			connection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 
 	}
 
@@ -185,7 +170,7 @@ public class MachineDataBaseHandler {
 	 * @param error_code
 	 * @param error_state
 	 */
-	public void updateDatabase(String machine_id, String article_in_production, String number_of_pieces, int error_code, int error_state) {
+	public void updateDatabase(int machine_id, String article_in_production, String number_of_pieces, int error_code, int error_state) {
 
 		Date dt = new Date();
 		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

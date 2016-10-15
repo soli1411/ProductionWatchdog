@@ -15,7 +15,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -29,7 +28,7 @@ import dev.soli.productionWatchdog.utils.Utils;
 
 public class Machine {
 
-	public String machine_id;	
+	public int machine_id;	
 	private String log_path;
 
 	//Errors variables
@@ -67,7 +66,7 @@ public class Machine {
 	 * @param machine_id
 	 * 
 	 */
-	public Machine(String machine_id) {
+	public Machine(int machine_id) {
 
 		this.machine_id=machine_id;
 		this.state=MachineState.NO_CONNECTION;
@@ -78,7 +77,7 @@ public class Machine {
 
 		//Connection
 		connected=false;
-		port=portOffset+Integer.parseInt(machine_id);
+		port=portOffset+machine_id;
 		connect();
 
 	}
@@ -293,21 +292,6 @@ public class Machine {
 		}
 	}
 
-	//TODO: finish this method with the new database tables configuration.
-	/**
-	 * 
-	 * @param machine_id
-	 * @returns a HashMap containing the error descriptions as keys and the error durations as values.
-	 * 
-	 */
-	public static HashMap<String,Long> getErrorDurations(String machine_id){
-
-		HashMap<String, Long> errorDurations=new HashMap<String, Long>();//HashMap for holding error description and error duration
-
-		return errorDurations;
-
-	}
-
 	/**
 	 * 
 	 * Resets the errors duration and the number of pieces made by the current machine.
@@ -371,10 +355,10 @@ public class Machine {
 
 		panel=new JPanel();
 		JLabel machine_id_label=new JLabel("Machine_"+machine_id);
-		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(machine_id));
+		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(""+machine_id));
 		error_label=new JLabel("Connecting...");
 		panel.add(machine_id_label);
-		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(MachineDataBaseHandler.is_db_connected()?machine_id:"Couldn't retrieve value from db"));
+		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(MachineDataBaseHandler.is_db_connected()?""+machine_id:"Couldn't retrieve value from db"));
 		panel.add(article_in_production_label);
 		//getting data from database
 		if (Integer.parseInt(number_of_pieces_label.getText())<0)

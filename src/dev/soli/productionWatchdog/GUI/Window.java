@@ -250,25 +250,6 @@ public class Window {
 		});
 		databaseMenu.add(menuItem);
 
-		//Menu voice: disconnect machine database. Allows the user to disconnect from database.
-		menuItem=new JMenuItem("Disconnect machine database");
-		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_9, ActionEvent.ALT_MASK));
-		//Action on menu button pressed
-		menuItem.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				//Creating a new thread so that the main window can continue to function.
-				Thread t;
-				t = new Thread() {
-					public void run() {
-						MachineDataBaseHandler.disconnect();
-					}
-				};
-				t.start();
-			}
-		});
-		databaseMenu.add(menuItem);
-
 		//Menu voice: show single machine chart. Allows the user to see the database content in a pie or a bar chart.
 		//N.B.:the data displayed on GUI can be out of sync.
 		menuItem=new JMenuItem("Single machine chart");
@@ -281,7 +262,7 @@ public class Window {
 				Thread t;
 				t = new Thread() {
 					public void run() {
-						Utils.showSingleMachineChart();
+						TimelineCharts.showSingleMachineDurationTable();
 					}
 				};
 				t.start();
@@ -301,7 +282,7 @@ public class Window {
 				Thread t;
 				t = new Thread() {
 					public void run() {
-						Utils.showMultipleMachineChart();
+						TimelineCharts.showMultipleMachineChart();
 					}
 				};
 				t.start();
