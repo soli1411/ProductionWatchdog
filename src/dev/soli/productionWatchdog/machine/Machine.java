@@ -32,7 +32,7 @@ public class Machine {
 	private String log_path;
 
 	//Errors variables
-	private enum MachineState { RUNNING, IN_ERRROR, RESET, NO_CONNECTION };
+	private enum MachineState { RUNNING, IN_ERRROR, RESET, NO_CONNECTION, APPLICATION_CLOSED };
 	private MachineState state;
 	public boolean errorState=true;
 	private static final long TIME_FOR_RUNNING_STATE=4000000000L;//after this time (in nanoseconds) elapses from an error event 
@@ -75,6 +75,10 @@ public class Machine {
 		//Graphic
 		addMachineOnGui();//also retrieves value of number of pieces made from database
 
+		
+		//SuiteOneDatabase
+		Launcher.suiteOneDataBaseHandler.addMachine(machine_id);
+		
 		//Connection
 		connected=false;
 		port=portOffset+machine_id;
@@ -281,15 +285,14 @@ public class Machine {
 				if (dataInputStream!=null)
 					dataInputStream.close();
 				connected=false;
-				state=MachineState.NO_CONNECTION;
-				error_info=-2;
-				System.out.println("Closed connection with machine "+machine_id);
-				error_label.setText("Disconnected...");
-				panel.setBackground(new Color(255,255,0));
 			} catch (IOException e) {
 				System.out.println("Couldn't close connection with machine "+machine_id);
 			}
 		}
+		state=MachineState.APPLICATION_CLOSED;
+		error_info=-3;
+		error_label.setText("Application closed");
+
 	}
 
 	/**

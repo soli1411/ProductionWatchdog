@@ -41,9 +41,15 @@ import dev.soli.productionWatchdog.utils.Utils;
 
 public class TimelineCharts {
 
-	//TODO: documentation of this part
-	
-	public static void displayTimelineCharts(ArrayList<String> machinesToChart,String startDate, String endDate) {
+	/**
+	 * 
+	 * Displays on the GUI a time line chart of the errors that the machines have encountered from startDate to endDate.
+	 * @param machinesToChart
+	 * @param startDate
+	 * @param endDate
+	 * 
+	 */
+	private static void displayTimelineCharts(ArrayList<String> machinesToChart,String startDate, String endDate) {
 		for (String machine_id:machinesToChart){
 			JFrame f=new JFrame("Machine_"+machine_id+" timeline chart");
 			TimePeriodValuesCollection timeLineDataset=createTimeLineDataset(machine_id,startDate,endDate);
@@ -69,14 +75,26 @@ public class TimelineCharts {
 		}
 	}
 
+	/**
+	 * 
+	 * @param duration
+	 * @return the duration converted to days:hours:minutes:seconds.
+	 * 
+	 */
 	private static String convertDuration(long duration){
 		long seconds=duration/1000L;
 		long minutes=seconds/60L;
 		long hours=minutes/60L;
 		long days=hours/24L; 
-		return days+":"+hours%24L+":"+minutes%60L+":"+seconds%60L;
+		return String.format("%02d : %02d : %02d : %02d",days,hours%24L,minutes%60L,seconds%60L);
 	}
 
+	/**
+	 * 
+	 * Displays a JTable containing the sum of the errors duration divided by article in production.
+	 * @param machine_id
+	 * 
+	 */
 	private static void showTotalErrorDuration(int machine_id) {
 		Statement statement=null;
 		ResultSet rs=null;
@@ -85,7 +103,7 @@ public class TimelineCharts {
 			String s = "select * from machine_"+machine_id+";";
 			rs=statement.executeQuery(s);
 			Vector<String> column=new Vector<String>();
-			column.add("Article in production"); column.add("error description"); column.add("error duration");
+			column.add("Article in production"); column.add("error code"); column.add("error description"); column.add("error duration (dd:hh:mm:ss");
 			Vector<Vector<String>> data=new Vector<Vector<String>>();
 			Vector<String> row=new Vector<String>();
 			ArrayList<Timestamp> sec=new ArrayList<Timestamp>();
@@ -103,10 +121,9 @@ public class TimelineCharts {
 							m.put(states.get(k), sec.get(k+1).getTime()-sec.get(k).getTime());
 					}
 					for (int j:m.keySet()){
-						row.add(previousArticle);row.add(""+j);row.add(convertDuration(m.get(j)));
+						row.add(previousArticle); row.add(""+j); row.add(Launcher.errors.get(j)); row.add(convertDuration(m.get(j)));
 						data.add(row);
 						row=new Vector<String>();
-						System.out.println(j+" "+convertDuration(m.get(j)));
 					}
 					sec=new ArrayList<Timestamp>();
 					states=new ArrayList<Integer>();
@@ -124,16 +141,16 @@ public class TimelineCharts {
 					m.put(states.get(k), sec.get(k+1).getTime()-sec.get(k).getTime());
 			}
 			for (int j:m.keySet()){
-				row.add(previousArticle);row.add(""+j);row.add(convertDuration(m.get(j)));
+				row.add(previousArticle); row.add(""+j); row.add(Launcher.errors.get(j)); row.add(convertDuration(m.get(j)));
 				data.add(row);
 				row=new Vector<String>();
-				System.out.println(j+" "+convertDuration(m.get(j)));
 			}
 			JFrame frame=new JFrame("Machine "+machine_id+" total error durations table");
 			frame.setExtendedState(JFrame.MAXIMIZED_BOTH);//Full screen
 			frame.setLocationRelativeTo(null);
 			JPanel panel=new JPanel();
 			JTable table=new JTable(data,column);
+			table.setAutoCreateRowSorter(true);
 			JScrollPane jsp=new JScrollPane(table);
 			panel.setLayout(new BorderLayout());
 			panel.add(jsp,BorderLayout.CENTER);
@@ -153,6 +170,14 @@ public class TimelineCharts {
 
 	}
 
+	/**
+	 * 
+	 * @param machine_id
+	 * @param startDate
+	 * @param endDate
+	 * @return a TimePeriodValuesCollection that is be used to plot the chart of the errors time line.
+	 * 
+	 */
 	private static TimePeriodValuesCollection createTimeLineDataset(String machine_id,String startDate, String endDate) {
 		TimePeriodValuesCollection dataset = new TimePeriodValuesCollection();
 		Statement c=null;
@@ -198,34 +223,65 @@ public class TimelineCharts {
 
 	/**
 	 * 
-	 * Displays a JTable of the error durations of a user selected machine in a separated JFrame.
+	 * Displays a JTable of the error durations of a user selected machines in a separated JFrame.
 	 * 
 	 */
-	public static void showSingleMachineDurationTable(){
+	public static void showDurationTable() {
 
-		//letting the user choose which machine to display
+		//letting the user choose which machines to display
 		String machine_list=Utils.machine_list_path;
 		File f = new File(machine_list);
 		String file=null;
 		if(f.exists() && !f.isDirectory())
 			file=Utils.loadFileAsString(machine_list);
 		String textStr[] = file.split("\\r\\n|\\n|\\r");
-		int machine_id = Integer.parseInt((String) JOptionPane.showInputDialog(null,"Choose a machine for the chart:",
-				"Choose a machine",JOptionPane.QUESTION_MESSAGE,null,textStr,textStr[1]));
-		if (Launcher.machines.containsKey(machine_id)){
-			showTotalErrorDuration(machine_id);
-		} else {
-			JOptionPane.showMessageDialog(null, "ERROR: Machine "+machine_id+" not found!");
+		//creating GUI to select machines
+		JFrame frame = new JFrame("Choose machines for the chart");
+		frame.setLayout(new GridLayout(0,1));
+		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		frame.setLocationRelativeTo(null);
+		frame.add(new JLabel("Choose machines for the chart"));
+		ArrayList<String> machinesToChart=new ArrayList<String>();//holds the temporary list of the IDs of users's selected machines
+		for (String s:textStr){
+			JCheckBox cb=new JCheckBox(s);
+			ActionListener actionListener = new ActionListener() {
+				public void actionPerformed(ActionEvent actionEvent) {
+					AbstractButton abstractButton = (AbstractButton) actionEvent.getSource();
+					boolean selected = abstractButton.getModel().isSelected();
+					if (selected){
+						machinesToChart.add(s);
+					} else {
+						machinesToChart.remove(s);
+					}
+				}
+			};
+			cb.addActionListener(actionListener);
+			frame.add(cb);
 		}
+		JButton button=new JButton("Done!");
+		button.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				frame.dispose();
+				for (String machine_id:machinesToChart){
+					showTotalErrorDuration(Integer.parseInt(machine_id));
+				}
+			}
+		});
+		frame.add(button);
+		frame.pack();
+		frame.setLocationRelativeTo(null);
+		frame.setVisible(true);
+
 
 	}
 
 	/**
 	 * 
-	 * Displays a (bar) chart (that can be print or saved as .PNG) of the error durations of user selected machines.
+	 * Displays a chart (that can be print or saved as .PNG) of the error durations of user selected machines.
 	 * 
 	 */
-	public static void showMultipleMachineChart(){
+	public static void timeLineChart() {
 
 		//letting the user choose which machines to display
 		String machine_list=Utils.machine_list_path;
@@ -279,4 +335,3 @@ public class TimelineCharts {
 	}
 
 }
-

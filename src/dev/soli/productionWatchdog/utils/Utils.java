@@ -188,13 +188,13 @@ public class Utils {
 	 * 
 	 */
 	public static void startMachines(){
-		
+
 		for (int i:Launcher.machines.keySet()){
 			Launcher.machines.put(i, new Machine(i));
 		}
-		
+
 	}
-	
+
 	/**
 	 * 
 	 * Loads a machine, selected by the user form the file located at machine_list_path, in the machine map.
@@ -249,25 +249,31 @@ public class Utils {
 	 * @param dirWay
 	 *
 	 */
-	public static void deleteFilesOlderThanNdays(long daysBack, String dirWay) {
+	public static void deleteLogsOlderThanNdays(long daysBack, String dirWay) {
 
+		MachineDataBaseHandler.deleteEntriesOlderThanNDays(daysBack);
 		File directory = new File(dirWay);
 		if(directory.exists()){
 			File[] listFiles = directory.listFiles();
 			long purgeTime = System.currentTimeMillis() - (daysBack * 24L * 60L * 60L * 1000L);
 			for (File listFile : listFiles) {
-					if (listFile.isDirectory()) {
-						deleteFilesOlderThanNdays(daysBack,dirWay+"\\"+listFile.getName());//recursion to explore all sub folders
-					} else {
-						if (listFile.lastModified() < purgeTime) {
-							if (!listFile.delete())
-								System.out.println("Error deleting file: "+listFile.getName());
+				if (listFile.isDirectory()) {
+					deleteLogsOlderThanNdays(daysBack,dirWay+"\\"+listFile.getName());//recursion to explore all sub folders
+				} else {
+					if (listFile.lastModified() < purgeTime) {
+						if (!listFile.delete())
+							System.out.println("Error deleting file: "+listFile.getName());
 					}
 				}
 			}
 		}
 	}
 
+	/**
+	 * 
+	 * Displays on the GUI the content of the database related to the user selected machine.
+	 * 
+	 */
 	public static void showSingleMachineDataBaseOnGui() {
 		//letting the user choose which machine to display
 		String machine_list=Utils.machine_list_path;
@@ -281,7 +287,7 @@ public class Utils {
 		if (!machine_id.equals(null)){
 			MachineDataBaseHandler.showDataBaseOnGui(machine_id);
 		}
-		
+
 	}
 
 }

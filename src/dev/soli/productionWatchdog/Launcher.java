@@ -16,6 +16,7 @@ import javax.swing.JOptionPane;
 import dev.soli.productionWatchdog.GUI.Window;
 import dev.soli.productionWatchdog.database.MachineDataBaseHandler;
 import dev.soli.productionWatchdog.database.MobileStationDataBaseHandler;
+import dev.soli.productionWatchdog.database.SuiteOneDataBaseHandler;
 import dev.soli.productionWatchdog.machine.Machine;
 import dev.soli.productionWatchdog.mobileStations.MobileStationsHandler;
 import dev.soli.productionWatchdog.utils.Utils;
@@ -37,22 +38,23 @@ import dev.soli.productionWatchdog.utils.Utils;
  */
 public class Launcher {
 
+	//TODO: interface with SuiteOne and tick method for new database of data exchange.
+	//TODO: documentation in read_me.txt about the usage for the users.
 	//TODO: make all machines communicate on the same port, they have different IPs, so it's not going to be a problem. 
 	//For now use different ports, so that you can simulate all the machines on local host.
 	//TODO: finish employee database and mobile stations part.
-	//TODO: count running time.
-	//Idea: take a PLC input as a flag that is set by the operator when the machine starts and it is reset when the machine finish or a new product is being made.
 
 	//Port for checking only one application at time is running 
 	private static final int APPLICATION_BIND_PORT=9998;
 	private static ServerSocket singleInstanceServerSocket;
 
-	//Refresh_time for the tick method (in milliseconds).
+	//Refresh_time for tick methods (in milliseconds).
 	private static final int TICK_TIME=600000;//10 minutes
+	private static final int TICK_SUITEONE_TIME=15000;//15 seconds
 
 	//Log directory path
 	public static final String logDirectory="C:/Users/Public/Documents/ProductionWatchdog/Logs";
-	public static final int DAYSTOKEEP=32;//number of days that the logs are held into memory. If the files are older, then they are deleted.
+	public static final int DAYS_TO_KEEP=32;//number of days that the logs are held into memory. If the files are older, then they are deleted.
 
 	//TreeMap of <machine_id,machine object>, used to keep track of connected machines.
 	public static Map<Integer,Machine> machines=new TreeMap<Integer, Machine>();
@@ -62,6 +64,9 @@ public class Launcher {
 
 	//Manager for the machine related database connection and activities.
 	public static MachineDataBaseHandler machineDatabaseHandler;
+
+	//Manager for the SuiteOne dedicated database connection and activities.
+	public static SuiteOneDataBaseHandler suiteOneDataBaseHandler;
 
 	//Manager for the mobile stations connections and activities.
 	public static MobileStationsHandler mobileStationsHandler;
@@ -94,6 +99,7 @@ public class Launcher {
 		//Starting connection with database
 		machineDatabaseHandler=new MachineDataBaseHandler();
 		mobileStationDatabaseHandler=new MobileStationDataBaseHandler();
+		suiteOneDataBaseHandler=new SuiteOneDataBaseHandler();
 
 		//Creating new instances of the machines
 		Utils.startMachines();
@@ -102,9 +108,10 @@ public class Launcher {
 		mobileStationsHandler=new MobileStationsHandler();//TODO: finish this part
 
 		//Logging and updating stored data
-		Utils.deleteFilesOlderThanNdays(DAYSTOKEEP, logDirectory);//deletes log files older than daysToKeep days.
+		Utils.deleteLogsOlderThanNdays(DAYS_TO_KEEP, logDirectory);//deletes log files & database entries if they are older than daysToKeep days.
 
-		tick();//logging and updating database periodically
+		tickSuiteOne();
+		tick();//logging last state to file and updating machine tables in the database periodically
 
 	}
 
@@ -118,7 +125,7 @@ public class Launcher {
 	private static void checkIfRunning() {
 
 		try {
-			//Bind to local host adapter with a zero connection queue 
+			//Bind to local host adapter with a zero connection queue
 			singleInstanceServerSocket=new ServerSocket(APPLICATION_BIND_PORT,0,InetAddress.getByAddress(new byte[] {127,0,0,1}));
 		}
 		catch (BindException e) {
@@ -142,7 +149,36 @@ public class Launcher {
 
 	/**
 	 * 
-	 * Routine that runs periodically every TICK_TIME milliseconds to update the database content and to log to file.
+	 * Routine that runs periodically every TICK_SUITEONE_TIME milliseconds to update the database content
+	 * 
+	 */
+	private static void tickSuiteOne(){
+
+		Thread t=new Thread() {
+			@Override
+			public void run() {
+
+				while(true){
+					try {
+						sleep(TICK_SUITEONE_TIME);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					System.out.println("TICK SUITEONE");
+					for (Machine m:machines.values()){
+						suiteOneDataBaseHandler.updateNumberOfPieces(m.machine_id,m.number_of_pieces_label.getText());
+					}
+				}
+
+			}
+		};
+		t.start();
+
+	}
+
+	/**
+	 * 
+	 * Routine that runs periodically every TICK_TIME milliseconds to update the machine table in the database content and to log to file.
 	 * 
 	 */
 	private static void tick() {
@@ -166,7 +202,7 @@ public class Launcher {
 				}
 
 			}
-		};	
+		};
 		t.start();
 
 	}

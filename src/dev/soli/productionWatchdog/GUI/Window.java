@@ -24,6 +24,7 @@ import javax.swing.KeyStroke;
 import dev.soli.productionWatchdog.Launcher;
 import dev.soli.productionWatchdog.database.MachineDataBaseHandler;
 import dev.soli.productionWatchdog.database.MobileStationDataBaseHandler;
+import dev.soli.productionWatchdog.database.SuiteOneDataBaseHandler;
 import dev.soli.productionWatchdog.utils.Utils;
 
 public class Window {
@@ -250,9 +251,28 @@ public class Window {
 		});
 		databaseMenu.add(menuItem);
 
-		//Menu voice: show single machine chart. Allows the user to see the database content in a pie or a bar chart.
+		//Menu voice: show SuiteOneDatabase content. Allows the user to see the SuiteOne's dedicated database content.
 		//N.B.:the data displayed on GUI can be out of sync.
-		menuItem=new JMenuItem("Single machine chart");
+		menuItem=new JMenuItem("Show SuiteOne Dedicated database");
+		//Action on menu button pressed
+		menuItem.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//Creating a new thread so that the main window can continue to function.
+				Thread t;
+				t = new Thread() {
+					public void run() {
+						SuiteOneDataBaseHandler.showDataBaseOnGui();
+					}
+				};
+				t.start();
+			}
+		});
+		databaseMenu.add(menuItem);
+
+		//Menu voice: state duration table. Allows the user to see the sum of errors occurred to the selected machines in a JTable.
+		//N.B.:the data displayed on GUI can be out of sync.
+		menuItem=new JMenuItem("State duration table");
 		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_0, ActionEvent.ALT_MASK));
 		//Action on menu button pressed
 		menuItem.addActionListener(new ActionListener(){
@@ -262,7 +282,7 @@ public class Window {
 				Thread t;
 				t = new Thread() {
 					public void run() {
-						TimelineCharts.showSingleMachineDurationTable();
+						TimelineCharts.showDurationTable();
 					}
 				};
 				t.start();
@@ -270,9 +290,9 @@ public class Window {
 		});
 		chartMenu.add(menuItem);
 
-		//Menu voice: show comparison chart. Allows the user to see the database content for the selected machines in a bar chart.
+		//Menu voice: shows multiple machine time line chart. Allows the user to see the database content for the selected machines and times in a time line chart.
 		//N.B.:the data displayed on GUI can be out of sync.
-		menuItem=new JMenuItem("Multiple machines chart");
+		menuItem=new JMenuItem("Timeline chart");
 		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, ActionEvent.ALT_MASK));
 		//Action on menu button pressed
 		menuItem.addActionListener(new ActionListener(){
@@ -282,7 +302,7 @@ public class Window {
 				Thread t;
 				t = new Thread() {
 					public void run() {
-						TimelineCharts.showMultipleMachineChart();
+						TimelineCharts.timeLineChart();
 					}
 				};
 				t.start();

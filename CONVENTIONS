@@ -21,7 +21,10 @@ The log and the database storage are triggered when one or more of this events h
 Every time the application is started it checks if there are logs or database entries older that Launcher.DAYSTOKEEP days.
 If this condition is met then those records are deleted from database and log files.
 In error log the value indicating the state of the machine assumes these values:
+* -3, if the application is closed.
 * -2, if there's no connection.
 * -1, if it has been reset.
 * 0, if it is running.
 * 1, if it is in state of error.
+-SuiteOne interface is made by mySql: a table named machines contains machine_ids (as primary key)
+ and the number of pieces that has made until the last reset in another column that gets updated every TICK_SUITEONE_TIME.

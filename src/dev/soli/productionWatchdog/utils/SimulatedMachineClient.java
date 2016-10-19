@@ -87,8 +87,8 @@ public class SimulatedMachineClient extends Thread {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 		//for (int i=1;i<40;i++){
-			SimulatedMachineClient t=new SimulatedMachineClient(1);
-			t.start();
+		SimulatedMachineClient t=new SimulatedMachineClient(5);
+		t.start();
 		//}
 	}
 
