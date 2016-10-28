@@ -9,6 +9,8 @@ import javax.swing.JFrame;
 
 public class SimulatedMachineClient extends Thread {
 
+	//FIXME: use byte[] instead of int int bool.
+	
 	int id;
 
 	@SuppressWarnings("resource")

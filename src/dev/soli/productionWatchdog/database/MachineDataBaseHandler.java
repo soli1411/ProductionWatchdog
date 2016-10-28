@@ -32,10 +32,10 @@ import dev.soli.productionWatchdog.utils.Utils;
 public class MachineDataBaseHandler {
 
 	//Dedicated user, password and database;
-	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
-	//private static final String dbName="mareca_produzione";
-	private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
-	private static final String dbName="mareca";
+	private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
+	private static final String dbName="mareca_produzione";
+	//private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
+	//private static final String dbName="mareca";
 	private static final String USER = "mareca";
 	private static final String PASSWORD="|VBSQQA_]_";
 	private static boolean db_connected;

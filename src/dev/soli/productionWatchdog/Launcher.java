@@ -38,7 +38,10 @@ import dev.soli.productionWatchdog.utils.Utils;
  */
 public class Launcher {
 
-	//TODO: interface with SuiteOne and tick method for new database of data exchange.
+	//TODO: fix machine.java code
+	//TODO: pieces multiplier
+	//TODO: test piece counter when current goes off ect.
+	//TODO: fix error handling
 	//TODO: documentation in read_me.txt about the usage for the users.
 	//TODO: make all machines communicate on the same port, they have different IPs, so it's not going to be a problem. 
 	//For now use different ports, so that you can simulate all the machines on local host.

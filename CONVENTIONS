@@ -1,30 +1,32 @@
 CONVENTIONS ADOPTED:
-Each machine has a machine id, which is a positive integer (eventually it could be a generic String).
-Each machine sends data through TCP/IP protocol to this application running on the server.
-Each packet sent contains two integers and a boolean values.
--The first integer denotes the number of pieces made until now, since the last reset of the counter.
--The second integer denotes the code(number) of the message that the machine outputs to the GUI.
--The boolean value denotes the state of the machine: true if it's running and producing regularly, false otherwise.
-Error code is a positive integer ranging from 1 to 43 (because the machines are programmed with that range of errors code).
-The error 0 of the machine has become the error 43 in the application for avoiding problems.
+-Each machine has a machine id, which is a positive integer (eventually it could be a generic String).
+-Each machine sends data through TCP/IP protocol to this application running on the server.
+-Each packet sent contains two integers and a boolean values.
+ *The first integer denotes the number of pieces made until now, since the last reset of the counter.
+ *The second integer denotes the code(number) of the message that the machine outputs to the GUI.
+ *The boolean value denotes the state of the machine: true if it's running and producing regularly, false otherwise.
+-The data is sent in this form: 32bit for the first number, 32bit for the second number, 8bit for the boolean value, 
+ which is the not of the last bit of this byte.
+-Error code is a positive integer ranging from 1 to 43 (because the machines are programmed with that range of errors code).
+ *The error 0 of the machine has become the error 43 in the application for avoiding problems.
 -Each error code has an associated error description, which is a space separated sequence of strings 
  that reports the error description that matches the error code.
-QR code of the employees is 2 space separated strings: the first denotes the role, the second the number_id.
-Only a single instance of the application is allowed and its made by biding to the server port 9998.
-Mobile stations communicate on the server port 9999
-*****Machines communicate on server port that starts from 3000 and goes by the machine_id. 
-The log and the database storage are triggered when one or more of this events happens:
--A machine goes in state of error (the boolean value received is false).
--A machine is reset from the GUI.
--Article in production changes.
--The tick function executes, event that happens periodically each Launcer.TICK_TIME milliseconds.
-Every time the application is started it checks if there are logs or database entries older that Launcher.DAYSTOKEEP days.
-If this condition is met then those records are deleted from database and log files.
-In error log the value indicating the state of the machine assumes these values:
-* -3, if the application is closed.
-* -2, if there's no connection.
-* -1, if it has been reset.
-* 0, if it is running.
-* 1, if it is in state of error.
+-(?)QR code of the employees is 2 space separated strings: the first denotes the role, the second the number_id.
+-Only a single instance of the application is allowed and its made by biding to the server port 9998.
+-Mobile stations communicate on the server port 9999.
+-(?)Machines communicate on server port that starts from 3000 and goes by the machine_id. 
+-The log and the database storage are triggered when one or more of this events happens:
+ *A machine goes in state of error (the boolean value received is false).
+ *A machine is reset from the GUI.
+ *Article in production changes.
+ *The tick function executes, event that happens periodically each Launcer.TICK_TIME milliseconds.
+-Every time the application is started it checks if there are logs or database entries older that Launcher.DAYSTOKEEP days.
+ If this condition is met then those records are deleted from database and log files.
+-In error log the value indicating the state of the machine assumes these values:
+ * -3, if the application is closed.
+ * -2, if there's no connection.
+ * -1, if it has been reset.
+ * 0, if it is running.
+ * 1, if it is in state of error.
 -SuiteOne interface is made by mySql: a table named machines contains machine_ids (as primary key)
  and the number of pieces that has made until the last reset in another column that gets updated every TICK_SUITEONE_TIME.

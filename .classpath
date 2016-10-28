@@ -6,5 +6,13 @@
 	<classpathentry kind="lib" path="mysql-connector-java-5.1.39-bin.jar"/>
 	<classpathentry kind="lib" path="jfreechart-1.0.19.jar"/>
 	<classpathentry kind="lib" path="jcommon-1.0.23.jar"/>
+	<classpathentry kind="lib" path="ch.qos.logback.classic_1.0.0.jar"/>
+	<classpathentry kind="lib" path="ch.qos.logback.core_1.0.0.jar"/>
+	<classpathentry kind="lib" path="org.openscada.external.jcifs_1.2.25.201303051448.jar"/>
+	<classpathentry kind="lib" path="org.openscada.jinterop.core_2.0.8.201303051454.jar"/>
+	<classpathentry kind="lib" path="org.openscada.jinterop.deps_1.0.0.201303051454.jar"/>
+	<classpathentry kind="lib" path="org.openscada.opc.dcom_1.0.0.201303051455.jar"/>
+	<classpathentry kind="lib" path="org.openscada.opc.lib_1.0.0.201303051455.jar"/>
+	<classpathentry kind="lib" path="slf4j.api_1.6.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -14,6 +14,7 @@ import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 import javax.swing.BorderFactory;
@@ -206,10 +207,12 @@ public class Machine {
 			while(connected==true) {
 				try {
 					socket.setSoTimeout(socket_timeout);
-					number_of_pieces=dataInputStream.readInt(); //Type can be changed, but the change must be here and in the plc's code
-					number_of_error=dataInputStream.readInt();//Type can be changed, but the change must be here and in the plc's code
+					byte[] a=new byte[256];//first 4 bytes first UDINT, second 4 bytes second UDINT, last bit of last byte equals !running
+					dataInputStream.read(a);
+					number_of_pieces=Utils.byteArrayToInt(Arrays.copyOfRange(a,0,4));//dataInputStream.readInt(); //Type can be changed, but the change must be here and in the plc's code
+					number_of_error=Utils.byteArrayToInt(Arrays.copyOfRange(a,4,8));//dataInputStream.readInt();//Type can be changed, but the change must be here and in the plc's code
 					number_of_error=number_of_error==0?43:number_of_error;//Changing mapping of error 0 in the machine for possible problems avoidance
-					running=dataInputStream.readBoolean();//Type can be changed, but the change must be here and in the plc's code
+					running=(a[8]&1)==0?true:false;//dataInputStream.readBoolean();//Type can be changed, but the change must be here and in the plc's code
 				} catch (InterruptedIOException e) {
 					dataInputStream.close();
 					System.out.println("Client isn't responding...\nTrying to restart connection...");
