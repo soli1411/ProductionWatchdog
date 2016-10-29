@@ -25,17 +25,17 @@ import dev.soli.productionWatchdog.utils.Utils;
  * 
  * Database manager class. The database is made so that each machine as its own table, with columns made like these:
  * date (DateTime, not null, primary key) | article_in_production VARCHAR(50) | number_of_pieces INT UNSIGNED |
- * error_code INT | error_state BOOLEAN
+ * multiplier INT UNSIGNED | error_code INT | error_state BOOLEAN
  * The entries older than Launcher.daysToKeep days are deleted.
  *
  */
 public class MachineDataBaseHandler {
 
 	//Dedicated user, password and database;
-	private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
-	private static final String dbName="mareca_produzione";
-	//private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
-	//private static final String dbName="mareca";
+	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
+	//private static final String dbName="mareca_produzione";
+	private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
+	private static final String dbName="mareca";
 	private static final String USER = "mareca";
 	private static final String PASSWORD="|VBSQQA_]_";
 	private static boolean db_connected;
@@ -60,8 +60,9 @@ public class MachineDataBaseHandler {
 				for (int machine_id:Launcher.machines.keySet()) {
 					statement.execute("CREATE TABLE IF NOT EXISTS machine_"+machine_id+" ("
 							+ "date DATETIME NOT NULL PRIMARY KEY,"
-							+ "article_in_production VARCHAR(50),"
+							+ "article_in_production VARCHAR(50) NOT NULL,"
 							+ "number_of_pieces INT UNSIGNED,"
+							+ "multiplier INT UNSIGNED,"
 							+ "error_code INT,"
 							+ "error_state TINYINT"
 							+ ");"
@@ -89,7 +90,7 @@ public class MachineDataBaseHandler {
 		Connection connection = null;
 		try {
 			//Establishing Java-MySQL connection
-			connection = DriverManager.getConnection(URL, USER, Utils.lolledalotwiththisname(PASSWORD));
+			connection=DriverManager.getConnection(URL, USER, Utils.lolledalotwiththisname(PASSWORD));
 			db_connected=true;
 		} catch (SQLException e) {
 			System.out.println("ERROR: Unable to Connect to Database.");
@@ -112,7 +113,7 @@ public class MachineDataBaseHandler {
 		ResultSet rs=null;
 		try {
 			Statement statement=connection.createStatement();
-			rs = statement.executeQuery("select * from "+dbName+".machine_"+machine_id+" order by date desc limit 1;");//gets the last entry in order of date
+			rs = statement.executeQuery("select number_of_pieces from "+dbName+".machine_"+machine_id+" order by date desc limit 1;");//gets the last entry in order of date
 		} catch (SQLException e) {
 			System.out.println("Couldn't retrieve the number of pieces for the machine "+machine_id);
 			e.printStackTrace();
@@ -145,10 +146,38 @@ public class MachineDataBaseHandler {
 			System.out.println("Couldn't retrieve the article in production for the machine "+machine_id);
 			e.printStackTrace();
 		}
-		String res="NONE";
+		String res="";
 		try {
 			while (rs.next()){
 				res = rs.getString("article_in_production");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return res;
+
+	}
+
+	/**
+	 * 
+	 * @param machine_id
+	 * @returns the multiplier saved in the database for the specified machine.
+	 * 
+	 */
+	public String getMultiplier(String machine_id){
+
+		ResultSet rs=null;
+		try {
+			Statement statement=connection.createStatement();
+			rs = statement.executeQuery("SELECT multiplier FROM "+dbName+".machine_"+machine_id+";");
+		} catch (SQLException e) {
+			System.out.println("Couldn't retrieve the multiplier for the machine "+machine_id);
+			e.printStackTrace();
+		}
+		String res="";
+		try {
+			while (rs.next()){
+				res = rs.getString("multiplier");
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -168,7 +197,7 @@ public class MachineDataBaseHandler {
 	 * @param error_state
 	 * 
 	 */
-	public void updateDatabase(int machine_id, String article_in_production, String number_of_pieces, int error_code, int error_state) {
+	public void updateDatabase(int machine_id, String article_in_production, String number_of_pieces, int multiplier, int error_code, int error_state) {
 
 		Date dt = new Date();
 		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -180,8 +209,8 @@ public class MachineDataBaseHandler {
 			e1.printStackTrace();
 		}
 		try {
-			statement.execute("INSERT INTO "+dbName+".machine_"+machine_id+" (date,article_in_production,number_of_pieces,error_code,error_state) "
-					+ "VALUES('"+currentTime+"','"+article_in_production+"',"+number_of_pieces+","+error_code+","+error_state+");");
+			statement.execute("INSERT INTO "+dbName+".machine_"+machine_id+" (date,article_in_production,number_of_pieces,multiplier,error_code,error_state) "
+					+ "VALUES('"+currentTime+"','"+article_in_production+"',"+number_of_pieces+","+multiplier+","+error_code+","+error_state+");");
 		} catch (SQLException e) {
 			e.printStackTrace();
 			System.out.println("Couldn't update database!");

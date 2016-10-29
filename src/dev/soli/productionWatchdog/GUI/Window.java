@@ -83,6 +83,7 @@ public class Window {
 		JLabel machine_id_label=new JLabel("MACHINE_ID");
 		JLabel current_article_label=new JLabel("ARTICLE");
 		JLabel number_of_pieces_label=new JLabel("NUMBER OF PIECES");
+		JLabel pieces_multiplier=new JLabel("MULTIPLIER");
 		JLabel error_label=new JLabel("ERROR");
 		JLabel reconnect_button_label=new JLabel("RECONNECT BUTTON");
 		JLabel reset_button_label=new JLabel("RESET BUTTON");
@@ -90,6 +91,7 @@ public class Window {
 		top.setLayout(layout);
 		top.add(machine_id_label);
 		top.add(current_article_label);
+		top.add(pieces_multiplier);
 		top.add(number_of_pieces_label);
 		top.add(error_label);
 		top.add(reconnect_button_label);

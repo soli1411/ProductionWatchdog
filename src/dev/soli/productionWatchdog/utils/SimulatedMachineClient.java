@@ -4,12 +4,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 
 import javax.swing.JFrame;
 
 public class SimulatedMachineClient extends Thread {
-
-	//FIXME: use byte[] instead of int int bool.
 	
 	int id;
 
@@ -38,45 +37,17 @@ public class SimulatedMachineClient extends Thread {
 			for (String s:file){
 				String a[]=s.split(" ");
 				try {
-					os.writeInt(Integer.parseInt(a[0]));
-					os.writeInt(Integer.parseInt(a[1]));
-					os.writeBoolean(Boolean.parseBoolean(a[2]));
+					//os.write(ByteBuffer.allocate(4).putInt(Integer.parseInt(a[0])).array());
+					//os.write(ByteBuffer.allocate(4).putInt(Integer.parseInt(a[1])).array());
+					//os.writeByte(Boolean.parseBoolean(a[2])==true?new Byte((byte) 0):new Byte((byte) 1));
+					os.write(((ByteBuffer.allocate(9).putInt(0, Integer.parseInt(a[0]))).putInt(4, Integer.parseInt(a[1]))).put(8,Boolean.parseBoolean(a[2])==true?new Byte((byte) 0):new Byte((byte) 1)).array());
 					os.flush();
-					Thread.sleep(900);
+					Thread.sleep(1000);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		}
-		/*int i=0,j=0;
-		while(true){
-			try {
-				i=Random.class.newInstance().nextInt(100010);
-				j=Random.class.newInstance().nextInt(42);
-			} catch (InstantiationException e1) {
-				e1.printStackTrace();
-			} catch (IllegalAccessException e1) {
-				e1.printStackTrace();
-			}
-			try {
-				System.out.println(i+" "+j+" "+i%2);
-				os.writeInt(i);
-				os.writeInt(j);
-				os.writeBoolean(i%2==0);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			try {
-				os.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			try{
-				Thread.sleep(1000);
-			} catch(Exception e){
-				e.printStackTrace();
-			}
-		}*/
 	}
 
 	public SimulatedMachineClient(int i)  throws IOException {

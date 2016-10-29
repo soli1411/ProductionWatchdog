@@ -18,11 +18,14 @@ CONVENTIONS ADOPTED:
 -The log and the database storage are triggered when one or more of this events happens:
  *A machine goes in state of error (the boolean value received is false).
  *A machine is reset from the GUI.
- *Article in production changes.
+ *Article in production is changed.
+ *Multiplier is changed.
  *The tick function executes, event that happens periodically each Launcer.TICK_TIME milliseconds.
 -Every time the application is started it checks if there are logs or database entries older that Launcher.DAYSTOKEEP days.
  If this condition is met then those records are deleted from database and log files.
 -In error log the value indicating the state of the machine assumes these values:
+ * -5, if the multiplier is changed.
+ * -4, if the article in production is changed.
  * -3, if the application is closed.
  * -2, if there's no connection.
  * -1, if it has been reset.

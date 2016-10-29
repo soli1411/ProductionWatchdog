@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,11 +22,11 @@ import java.util.Date;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import dev.soli.productionWatchdog.Launcher;
 import dev.soli.productionWatchdog.GUI.Window;
-import dev.soli.productionWatchdog.database.MachineDataBaseHandler;
 import dev.soli.productionWatchdog.utils.Utils;
 
 public class Machine {
@@ -33,14 +35,15 @@ public class Machine {
 	private String log_path;
 
 	//Errors variables
-	private enum MachineState { RUNNING, IN_ERRROR, RESET, NO_CONNECTION, APPLICATION_CLOSED };
+	private enum MachineState { RUNNING, IN_ERRROR, RESET, NO_CONNECTION, APPLICATION_CLOSED, CHANGED_ARTICLE, CHANGED_MULTIPLIER };
 	private MachineState state;
 	public boolean errorState=true;
 	private static final long TIME_FOR_RUNNING_STATE=4000000000L;//after this time (in nanoseconds) elapses from an error event 
 	//and the machine has been running, it can be considered running.
 	private long timeAtLastErrorEnd=0;
 	public int errorHappened=-1;
-	public int error_info=-2;
+	public int error_info=-3;
+	private int multiplier=1;
 
 	//Connection variables
 	private static final int portOffset=3000;//port number at which the ports starts to be assigned. 
@@ -53,11 +56,12 @@ public class Machine {
 	private ServerSocket serverSocket;
 	private DataInputStream dataInputStream;
 
-	//Graphic variables
+	//Graphical variables
 	private JPanel panel;
 	public JLabel article_in_production_label=null;
 	public JLabel number_of_pieces_label=null;
 	public JLabel error_label=null;
+	private JLabel pieces_multiplier_label=null;
 
 	/**
 	 * 
@@ -76,10 +80,10 @@ public class Machine {
 		//Graphic
 		addMachineOnGui();//also retrieves value of number of pieces made from database
 
-		
+
 		//SuiteOneDatabase
 		Launcher.suiteOneDataBaseHandler.addMachine(machine_id);
-		
+
 		//Connection
 		connected=false;
 		port=portOffset+machine_id;
@@ -110,6 +114,15 @@ public class Machine {
 			break;
 		case NO_CONNECTION:
 			error_info=-2;
+			break;
+		case APPLICATION_CLOSED:
+			error_info=-3;
+			break;
+		case CHANGED_ARTICLE:
+			error_info=-4;
+			break;
+		case CHANGED_MULTIPLIER:
+			error_info=-5;
 			break;
 		default:
 			break;
@@ -209,10 +222,10 @@ public class Machine {
 					socket.setSoTimeout(socket_timeout);
 					byte[] a=new byte[256];//first 4 bytes first UDINT, second 4 bytes second UDINT, last bit of last byte equals !running
 					dataInputStream.read(a);
-					number_of_pieces=Utils.byteArrayToInt(Arrays.copyOfRange(a,0,4));//dataInputStream.readInt(); //Type can be changed, but the change must be here and in the plc's code
-					number_of_error=Utils.byteArrayToInt(Arrays.copyOfRange(a,4,8));//dataInputStream.readInt();//Type can be changed, but the change must be here and in the plc's code
+					number_of_pieces=Utils.byteArrayToInt(Arrays.copyOfRange(a,0,4))*multiplier;//Type can be changed, but the change must be here and in the plc's code
+					number_of_error=Utils.byteArrayToInt(Arrays.copyOfRange(a,4,8));//Type can be changed, but the change must be here and in the plc's code
 					number_of_error=number_of_error==0?43:number_of_error;//Changing mapping of error 0 in the machine for possible problems avoidance
-					running=(a[8]&1)==0?true:false;//dataInputStream.readBoolean();//Type can be changed, but the change must be here and in the plc's code
+					running=(a[8]&1)==0?true:false;//Type can be changed, but the change must be here and in the plc's code
 				} catch (InterruptedIOException e) {
 					dataInputStream.close();
 					System.out.println("Client isn't responding...\nTrying to restart connection...");
@@ -318,7 +331,8 @@ public class Machine {
 
 	/**
 	 * 
-	 * Logs to file the state of the machine: it writes the number of pieces made until now and the state of error if there's one.
+	 * Logs to file the state of the machine: it writes the number of pieces made until now, the state of error,
+	 * the current time as a TimeStamp and a description.
 	 * 
 	 */
 	public void log(String logDescription, String timeStamp) {
@@ -340,7 +354,45 @@ public class Machine {
 		} catch (FileNotFoundException e) {
 			System.out.println("File not found!");
 		}
-		Launcher.machineDatabaseHandler.updateDatabase(machine_id, article_in_production_label.getText(), number_of_pieces_label.getText(), errorHappened, error_info);
+		Launcher.machineDatabaseHandler.updateDatabase(machine_id, article_in_production_label.getText(), 
+				number_of_pieces_label.getText(), Integer.parseInt(pieces_multiplier_label.getText()), 
+				errorHappened, error_info);
+
+	}
+
+	/**
+	 * 
+	 * Sets the article in production label to the new string passed as argument.
+	 * 
+	 * @param newArticle
+	 * 
+	 */
+	public void setArticleInProduction(String newArticle){
+
+		if (!newArticle.equals("") && !newArticle.equals(null))
+			article_in_production_label.setText(newArticle);
+		error_info=-4;
+		log("Changed article in production - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
+				new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
+
+	}
+
+	/**
+	 * 
+	 * Sets the multiplier for the pieces to the new multiplier.
+	 * 
+	 * @param newMoltiplier
+	 * 
+	 */
+	public void setMultiplier(int newMultiplier){
+
+		if (newMultiplier<=0)
+			return;
+		pieces_multiplier_label.setText(""+newMultiplier);
+		multiplier=Integer.parseInt(pieces_multiplier_label.getText());
+		error_info=-5;
+		log("Changed multiplier - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
+				new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 
 	}
 
@@ -362,13 +414,38 @@ public class Machine {
 		panel=new JPanel();
 		JLabel machine_id_label=new JLabel("Machine_"+machine_id);
 		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(""+machine_id));
+		if (number_of_pieces_label.getText().equals("") || number_of_pieces_label.getText().equals(null))
+			number_of_pieces_label.setText("0");
 		error_label=new JLabel("Connecting...");
 		panel.add(machine_id_label);
-		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(MachineDataBaseHandler.is_db_connected()?""+machine_id:"Couldn't retrieve value from db"));
+		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(""+machine_id));
+		if (article_in_production_label.getText().equals("") || article_in_production_label.getText().equals(null))
+			article_in_production_label.setText("NONE");
+		//on click edit text
+		article_in_production_label.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent e){
+				setArticleInProduction(JOptionPane.showInputDialog("Please enter the new article:"));
+			}
+		});
 		panel.add(article_in_production_label);
-		//getting data from database
-		if (Integer.parseInt(number_of_pieces_label.getText())<0)
-			number_of_pieces_label.setText("0");//sets the label to "0" if there were no data in database
+		pieces_multiplier_label=new JLabel(Launcher.machineDatabaseHandler.getMultiplier(""+machine_id));
+		if (pieces_multiplier_label.getText().equals("") || pieces_multiplier_label.getText().equals(null))
+			pieces_multiplier_label.setText("1");
+		multiplier=Integer.parseInt(pieces_multiplier_label.getText());
+		//on click set multiplier
+		pieces_multiplier_label.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent e){
+				try {
+					setMultiplier(Integer.parseUnsignedInt((JOptionPane.showInputDialog("Please enter the new multiplier:"))));
+				} catch (NumberFormatException nfe){
+					nfe.printStackTrace();
+					JOptionPane.showMessageDialog(null,"Error: not a valid number!");
+				}
+			}
+		});
+		panel.add(pieces_multiplier_label);
 		panel.add(number_of_pieces_label);
 		panel.add(error_label);
 		panel.setBackground(new Color(255,255,0));

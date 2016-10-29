@@ -20,10 +20,10 @@ import dev.soli.productionWatchdog.utils.Utils;
 public class SuiteOneDataBaseHandler {
 
 	//Dedicated user, password and database;
-	private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
-	private static final String dbName="mareca_produzione";
-	//private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
-	//private static final String dbName="mareca";
+	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
+	//private static final String dbName="mareca_produzione";
+	private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
+	private static final String dbName="mareca";
 	private static final String USER = "mareca";
 	private static final String PASSWORD="|VBSQQA_]_";
 	private static final String tableName="machines";
@@ -84,7 +84,7 @@ public class SuiteOneDataBaseHandler {
 		return connection;
 
 	}
-	
+
 	/**
 	 * 
 	 * Adds the passed machine ID to the table.
@@ -92,7 +92,7 @@ public class SuiteOneDataBaseHandler {
 	 * 
 	 */
 	public void addMachine(int machine_id){
-	
+
 		Statement s=null;
 		try {
 			s=connection.createStatement();
@@ -100,7 +100,7 @@ public class SuiteOneDataBaseHandler {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	/**
@@ -110,7 +110,7 @@ public class SuiteOneDataBaseHandler {
 	 * 
 	 */
 	public void updateNumberOfPieces(int machine_id, String number_of_pieces){
-		
+
 		Statement s=null;
 		try {
 			s=connection.createStatement();
@@ -118,7 +118,7 @@ public class SuiteOneDataBaseHandler {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	/**

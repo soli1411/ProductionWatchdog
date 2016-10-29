@@ -38,10 +38,7 @@ import dev.soli.productionWatchdog.utils.Utils;
  */
 public class Launcher {
 
-	//TODO: fix machine.java code
-	//TODO: pieces multiplier
-	//TODO: test piece counter when current goes off ect.
-	//TODO: fix error handling
+	//TODO: align beautifully the components titles in the main window with each machine panel.
 	//TODO: documentation in read_me.txt about the usage for the users.
 	//TODO: make all machines communicate on the same port, they have different IPs, so it's not going to be a problem. 
 	//For now use different ports, so that you can simulate all the machines on local host.
@@ -85,7 +82,6 @@ public class Launcher {
 	 * 
 	 */
 	public static void main(String[] args) {
-
 		//Allowing only one instance of the program at time.
 		checkIfRunning();
 
@@ -108,7 +104,7 @@ public class Launcher {
 		Utils.startMachines();
 
 		//Starting connections with mobile stations
-		mobileStationsHandler=new MobileStationsHandler();//TODO: finish this part
+		mobileStationsHandler=new MobileStationsHandler();
 
 		//Logging and updating stored data
 		Utils.deleteLogsOlderThanNdays(DAYS_TO_KEEP, logDirectory);//deletes log files & database entries if they are older than daysToKeep days.
