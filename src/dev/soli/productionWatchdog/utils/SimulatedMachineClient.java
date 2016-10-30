@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import javax.swing.JFrame;
 
 public class SimulatedMachineClient extends Thread {
-	
+
 	int id;
 
 	@SuppressWarnings("resource")

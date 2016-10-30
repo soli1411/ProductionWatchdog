@@ -38,10 +38,7 @@ import dev.soli.productionWatchdog.utils.Utils;
  */
 public class Launcher {
 
-	//TODO: align beautifully the components titles in the main window with each machine panel.
 	//TODO: documentation in read_me.txt about the usage for the users.
-	//TODO: make all machines communicate on the same port, they have different IPs, so it's not going to be a problem. 
-	//For now use different ports, so that you can simulate all the machines on local host.
 	//TODO: finish employee database and mobile stations part.
 
 	//Port for checking only one application at time is running 
@@ -194,7 +191,6 @@ public class Launcher {
 					}
 					System.out.println("Running "+Thread.activeCount()+" Threads");
 					for (Machine m:machines.values()){
-						System.out.println(m==null?"asd":"machine="+m.machine_id);
 						m.log("Tick - pieces="+m.number_of_pieces_label.getText()+" error="+m.error_label.getText(),
 								new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 					}

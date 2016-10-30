@@ -15,20 +15,20 @@ public class MobileStationsHandler {
 
 	private static final int port=9999;//port number at which the mobile stations communicate with this application.
 	//if you change this, you will have to change the port number in the mobile stations code.
-	
+
 	/**
 	 * 
 	 * Creates a new thread that listens for incoming connections on port port and binds them with a mobileStationServer.
 	 * 
 	 */
 	public MobileStationsHandler(){
-		
-		
+
+
 		Thread t=new Thread() {
 			@SuppressWarnings("resource")
 			@Override
 			public void run() {
-				
+
 				ServerSocket serverSocket = null;
 				try {
 					serverSocket = new ServerSocket(port);
@@ -55,11 +55,11 @@ public class MobileStationsHandler {
 						System.out.println("Already connected to: "+socket);
 					}
 				}
-				
+
 			}
 		};
 		t.start();
-		
+
 	}
-	
+
 }

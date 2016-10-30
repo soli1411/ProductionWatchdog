@@ -61,7 +61,7 @@ public class Machine {
 	public JLabel article_in_production_label=null;
 	public JLabel number_of_pieces_label=null;
 	public JLabel error_label=null;
-	private JLabel pieces_multiplier_label=null;
+	public JLabel pieces_multiplier_label=null;
 
 	/**
 	 * 

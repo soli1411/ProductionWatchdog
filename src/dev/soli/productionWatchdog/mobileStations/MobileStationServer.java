@@ -1,17 +1,21 @@
 package dev.soli.productionWatchdog.mobileStations;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import dev.soli.productionWatchdog.Launcher;
+import dev.soli.productionWatchdog.machine.Machine;
+
 public class MobileStationServer extends Thread{
-//FIXME all!
+	//FIXME all!
 	private Socket socket=null;
-	
+
 	/**
 	 * 
 	 * Creates a listener over the specified socket for a mobile station.
@@ -22,7 +26,7 @@ public class MobileStationServer extends Thread{
 	public MobileStationServer(Socket socket){
 		this.socket=socket;
 	}
-	
+
 	/**
 	 * 
 	 * Gets the string data sent by the mobile station over TCP/IP protocol and handles it.
@@ -34,35 +38,32 @@ public class MobileStationServer extends Thread{
 		String client = address.getHostName();
 		int porta = socket.getPort();
 		System.out.println("Connected with client: "+ client + " porta: " + porta);
+		BufferedReader in=null;
 		try {
-			new DataInputStream(socket.getInputStream());
+			in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		BufferedReader d = null;
+		PrintWriter out=null;
 		try {
-			d = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		try {
-			new DataOutputStream(socket.getOutputStream());
+			out=new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		while (true) {
-			String input = null;
+			String input=null;
 			try {
-				input = d.readLine();
+				input=in.readLine();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			System.out.println(input);
+			System.out.println("Request from station "+client+": "+input);
 			if (input==null){
 				System.out.println("Connection interrupted with client: "+ client + " porta: " + porta);
 				break;
 			} else {
-				handleInput(input);
+				String response=handleInput(input);
+				out.println(response);
 			}
 		}
 		try {
@@ -79,21 +80,39 @@ public class MobileStationServer extends Thread{
 	 * @param input
 	 * 
 	 */
-	private void handleInput(String input) {
+	private String handleInput(String input) {
 		//TODO: database related part.
+
+		//EmployeeId - ActivityName - Request data
+		//employeeId - NewProductionActivity - machine_id - newArticle
+		//employeeId - CheckQuotes TODO:implement this and ask for specifications.
+		//employeeId - GetMachinesState - ',' separated machine_ids values.
+		//employeeId - GetAllMachinesState
 		String[] inputParts=input.split(" ");
-		String role=inputParts[0];
-		String id_number=inputParts[1];
-		String actionTaken=inputParts[2];
-		StringBuilder desc = new StringBuilder(inputParts[3]);
-		for (int i = 3; i < inputParts.length; i++){
+		String employeeId=inputParts[0];
+		String activityName=inputParts[1];
+		StringBuilder desc=new StringBuilder();
+		for (int i=2;i<inputParts.length;i++){
 			desc.append(" "+inputParts[i]);
 		}
 		String description=desc.toString();
-		System.out.println("Agent="+role+" "+id_number);
-		System.out.println("Action="+actionTaken);
-		System.out.println("Description="+description);
-		
+		if (activityName.equals("NewProductionActivity")){
+			Launcher.machines.get(Integer.parseInt(inputParts[2])).setArticleInProduction(inputParts[3]);
+			return "DONE!";
+			//TODO: handle employee action.
+		} else if (activityName.equals("GetMachinesState")){
+			
+		} else if (activityName.equals("GetAllMachinesState")){
+			String response="";
+			for (Machine m:Launcher.machines.values()){
+				response+=m.machine_id+" "+m.article_in_production_label.getText()+" "+m.pieces_multiplier_label.getText()+" "+m.number_of_pieces_label.getText()
+					+" "+m.error_label.getText()+";";
+			}
+			return response;
+		} else if (activityName.equals("CheckQuotes")){
+
+		}
+		return "FAIL";
 	}
-	
+
 }
