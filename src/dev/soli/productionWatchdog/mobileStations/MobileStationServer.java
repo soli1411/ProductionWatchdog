@@ -81,12 +81,12 @@ public class MobileStationServer extends Thread{
 	 * 
 	 */
 	private String handleInput(String input) {
-		//TODO: database related part.
+		//TODO: employee-actions database related part.
 
 		//EmployeeId - ActivityName - Request data
-		//employeeId - NewProductionActivity - machine_id - newArticle
-		//employeeId - CheckQuotes TODO:implement this and ask for specifications.
-		//employeeId - GetMachinesState - ',' separated machine_ids values.
+		//employeeId - NewProductionActivity - machine_id - multiplier - newArticle
+		//employeeId - CheckQuotes TODO:implement this operation and ask for specifications.
+		//employeeId - GetMachinesState - ',' separated machine_ids values //TODO: eliminate this activity
 		//employeeId - GetAllMachinesState
 		String[] inputParts=input.split(" ");
 		String employeeId=inputParts[0];
@@ -97,11 +97,12 @@ public class MobileStationServer extends Thread{
 		}
 		String description=desc.toString();
 		if (activityName.equals("NewProductionActivity")){
-			Launcher.machines.get(Integer.parseInt(inputParts[2])).setArticleInProduction(inputParts[3]);
+			Machine m=Launcher.machines.get(Integer.parseInt(inputParts[2]));
+			System.out.println(m.machine_id+" i=3 "+inputParts[3]+" i=4 "+inputParts[4]);
+			m.setMultiplier(Integer.parseInt(inputParts[3]));
+			m.setArticleInProduction(inputParts[4]);
 			return "DONE!";
 			//TODO: handle employee action.
-		} else if (activityName.equals("GetMachinesState")){
-			
 		} else if (activityName.equals("GetAllMachinesState")){
 			String response="";
 			for (Machine m:Launcher.machines.values()){
@@ -113,6 +114,7 @@ public class MobileStationServer extends Thread{
 
 		}
 		return "FAIL";
+		
 	}
 
 }

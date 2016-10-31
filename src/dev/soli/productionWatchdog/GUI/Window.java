@@ -9,6 +9,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.net.URL;
 
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -73,13 +74,13 @@ public class Window {
 		//Setting the scroll panes
 		panel = new JPanel(new GridLayout(0,1));//rows as needed, 1 column
 		scrollPane = new JScrollPane(panel);
-		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setVisible(true);
 
 		//Creating the legend on the top of the window
 		JPanel top=new JPanel();
-		top.setBackground(new Color(255,255,0));//Yellow background
+		top.setBackground(new Color(255,255,255));//White background
 		JLabel machine_id_label=new JLabel("MACHINE_ID");
 		JLabel current_article_label=new JLabel("ARTICLE");
 		JLabel number_of_pieces_label=new JLabel("NUMBER OF PIECES");
@@ -88,6 +89,7 @@ public class Window {
 		JLabel reconnect_button_label=new JLabel("RECONNECT BUTTON");
 		JLabel reset_button_label=new JLabel("RESET BUTTON");
 		GridLayout layout = new GridLayout();
+		top.setBorder(BorderFactory.createTitledBorder("MACHINE_ID"));
 		top.setLayout(layout);
 		top.add(machine_id_label);
 		top.add(current_article_label);

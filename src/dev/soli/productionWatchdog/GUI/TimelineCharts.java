@@ -183,7 +183,7 @@ public class TimelineCharts {
 		Statement c=null;
 		try {
 			c=MachineDataBaseHandler.getConnection().createStatement();
-			ResultSet rs=c.executeQuery("select * from mareca.machine_"+machine_id+" where date>\""+startDate+"\" and date<\""+endDate+"\";");
+			ResultSet rs=c.executeQuery("select * from "+MachineDataBaseHandler.dbName+".machine_"+machine_id+" where date>\""+startDate+"\" and date<\""+endDate+"\";");
 			TimePeriodValues series=null;
 			ArrayList<Second> sec=null;
 			ArrayList<Integer> states=null;

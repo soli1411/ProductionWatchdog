@@ -40,17 +40,17 @@ public class Launcher {
 
 	//TODO: documentation in read_me.txt about the usage for the users.
 	//TODO: finish employee database and mobile stations part.
-
+	
 	//Port for checking only one application at time is running 
 	private static final int APPLICATION_BIND_PORT=9998;
 	private static ServerSocket singleInstanceServerSocket;
 
 	//Refresh_time for tick methods (in milliseconds).
-	private static final int TICK_TIME=600000;//10 minutes
-	private static final int TICK_SUITEONE_TIME=15000;//15 seconds
+	private static final int TICK_TIME=60*10000;//10 minutes
+	private static final int TICK_SUITEONE_TIME=15*1000;//15 seconds
 
 	//Log directory path
-	public static final String logDirectory="C:/Users/Public/Documents/ProductionWatchdog/Logs";
+	public static final String logDirectory="C:/ProductionWatchdog/Logs";
 	public static final int DAYS_TO_KEEP=32;//number of days that the logs are held into memory. If the files are older, then they are deleted.
 
 	//TreeMap of <machine_id,machine object>, used to keep track of connected machines.
@@ -94,7 +94,7 @@ public class Launcher {
 
 		//Starting connection with database
 		machineDatabaseHandler=new MachineDataBaseHandler();
-		mobileStationDatabaseHandler=new MobileStationDataBaseHandler();
+		//mobileStationDatabaseHandler=new MobileStationDataBaseHandler();
 		suiteOneDataBaseHandler=new SuiteOneDataBaseHandler();
 
 		//Creating new instances of the machines

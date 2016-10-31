@@ -37,11 +37,11 @@ public class Machine {
 	//Errors variables
 	private enum MachineState { RUNNING, IN_ERRROR, RESET, NO_CONNECTION, APPLICATION_CLOSED, CHANGED_ARTICLE, CHANGED_MULTIPLIER };
 	private MachineState state;
-	public boolean errorState=true;
-	private static final long TIME_FOR_RUNNING_STATE=4000000000L;//after this time (in nanoseconds) elapses from an error event 
+	public boolean errorState=false;
+	private static final long TIME_FOR_RUNNING_STATE=180*1000000000L;//after this time (expressed as number of seconds * second in nanoseconds) elapses from an error event 
 	//and the machine has been running, it can be considered running.
 	private long timeAtLastErrorEnd=0;
-	public int errorHappened=-1;
+	public int errorHappened=-6;
 	public int error_info=-3;
 	private int multiplier=1;
 
@@ -76,10 +76,10 @@ public class Machine {
 		this.machine_id=machine_id;
 		this.state=MachineState.NO_CONNECTION;
 		log_path=Launcher.logDirectory+"/Machine_"+this.machine_id+"/"+Utils.getDayAndMonth()+".txt";
+		timeAtLastErrorEnd=System.nanoTime()-TIME_FOR_RUNNING_STATE;//so that the machine if when connect is running has a background of (238,238,238)
 
 		//Graphic
 		addMachineOnGui();//also retrieves value of number of pieces made from database
-
 
 		//SuiteOneDatabase
 		Launcher.suiteOneDataBaseHandler.addMachine(machine_id);
@@ -215,17 +215,17 @@ public class Machine {
 
 		try {
 			dataInputStream = new DataInputStream(socket.getInputStream());
-			Integer number_of_error=-1,number_of_pieces=-1;
+			Integer number_of_error=-1,number_of_pieces=0;
 			Boolean running=false;
 			while(connected==true) {
 				try {
 					socket.setSoTimeout(socket_timeout);
-					byte[] a=new byte[256];//first 4 bytes first UDINT, second 4 bytes second UDINT, last bit of last byte equals !running
+					byte[] a=new byte[18];//first 4 bytes first UDINT, second 4 bytes second UDINT, last bit of last byte equals !running
 					dataInputStream.read(a);
 					number_of_pieces=Utils.byteArrayToInt(Arrays.copyOfRange(a,0,4))*multiplier;//Type can be changed, but the change must be here and in the plc's code
 					number_of_error=Utils.byteArrayToInt(Arrays.copyOfRange(a,4,8));//Type can be changed, but the change must be here and in the plc's code
 					number_of_error=number_of_error==0?43:number_of_error;//Changing mapping of error 0 in the machine for possible problems avoidance
-					running=(a[8]&1)==0?true:false;//Type can be changed, but the change must be here and in the plc's code
+					running=(a[8]&1)==0?false:true;//Type can be changed, but the change must be here and in the plc's code
 				} catch (InterruptedIOException e) {
 					dataInputStream.close();
 					System.out.println("Client isn't responding...\nTrying to restart connection...");
@@ -313,12 +313,11 @@ public class Machine {
 
 	/**
 	 * 
-	 * Resets the errors duration and the number of pieces made by the current machine.
+	 * Resets the errors and the number of pieces made by the current machine because a new production may be started.
 	 * 
 	 */
 	public void reset() {
 
-		article_in_production_label.setText("RESETTED");
 		number_of_pieces_label.setText("0");
 		errorHappened=-1;
 		error_info=-1;
@@ -398,6 +397,26 @@ public class Machine {
 
 	/**
 	 * 
+	 * Starts a new production specified with the new multiplier and the new article received as parameters.
+	 * 
+	 * @param newMultiplier
+	 * @param newArticle
+	 * 
+	 */
+	public void startNewProduction(int newMultiplier, String newArticle){
+
+		if (newMultiplier<=0)
+			return;
+		pieces_multiplier_label.setText(""+newMultiplier);
+		multiplier=Integer.parseInt(pieces_multiplier_label.getText());
+		if (!newArticle.equals("") && !newArticle.equals(null))
+			article_in_production_label.setText(newArticle);
+		reset();
+
+	}
+
+	/**
+	 * 
 	 * Adds to the GUI a panel that displays info about the machine, providing:
 	 * 	the machine's ID,
 	 * 	the number of pieces made, accessing the database to retrieve the value (if there is one),
@@ -465,7 +484,8 @@ public class Machine {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Resetting...");
-				reset();
+				if (JOptionPane.showConfirmDialog(null, "Are you sure you want to start a new production?", "STARTING NEW PRODUCTION", JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION)
+					startNewProduction(Integer.parseInt(JOptionPane.showInputDialog(null,"Please enter the new multiplier","1")),JOptionPane.showInputDialog(null,"Please enter the new article name","ARTICLE_NAME"));
 			}
 		});
 		panel.add(button);

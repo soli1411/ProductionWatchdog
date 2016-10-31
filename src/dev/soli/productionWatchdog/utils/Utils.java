@@ -27,10 +27,9 @@ import dev.soli.productionWatchdog.machine.Machine;
  */
 public class Utils {
 
-	public static final String article_list_path="C:/Users/Public/Documents/ProductionWatchdog/article_list.txt";
-	public static final String machine_list_path="C:/Users/Public/Documents/ProductionWatchdog/machines_list.txt";
-	public static final String error_list_path = "C:/Users/Public/Documents/ProductionWatchdog/errors_list.txt";
-	public static final String read_me_path =    "C:/Users/Public/Documents/ProductionWatchdog/READ_ME.txt";
+	public static final String machine_list_path="C:/ProductionWatchdog/machines_list.txt";
+	public static final String error_list_path = "C:/ProductionWatchdog/errors_list.txt";
+	public static final String read_me_path =    "C:/ProductionWatchdog/READ_ME.txt";
 	public static Color[] colors;
 
 	/**
