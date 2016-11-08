@@ -167,7 +167,7 @@ public class Utils {
 	/**
 	 * 
 	 * Loads all the machines, form the file located at machine_list_path, in the machine map.
-	 * The file is made of different rows each made of an integer, indicating the machine_id.
+	 * The file is made of different rows each made of an integer, indicating the machineId.
 	 * This method also updates the database if any new machine is encountered.
 	 * It makes sure that same machine isn't added twice and the content of the file is then sorted.
 	 * 
@@ -214,7 +214,7 @@ public class Utils {
 	/**
 	 * 
 	 * Loads a machine, selected by the user form the file located at machine_list_path, in the machine map.
-	 * The file is made of different rows each made of an integer, indicating the machine_id.
+	 * The file is made of different rows each made of an integer, indicating the machineId.
 	 * This method also updates the database if any new machine is encountered.
 	 * It makes sure that same machine isn't added twice and the content of the file is then sorted.
 	 * 

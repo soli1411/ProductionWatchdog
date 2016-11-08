@@ -38,22 +38,24 @@ import dev.soli.productionWatchdog.utils.Utils;
  */
 public class Launcher {
 
+	//TODO: handling of multipliers & number of pieces: store only the number not multiplied in db, and the multiplier, show calculus on GUI.
+
 	//TODO: documentation in read_me.txt about the usage for the users.
 	//TODO: finish employee database and mobile stations part.
-	
+
 	//Port for checking only one application at time is running 
 	private static final int APPLICATION_BIND_PORT=9998;
 	private static ServerSocket singleInstanceServerSocket;
 
 	//Refresh_time for tick methods (in milliseconds).
-	private static final int TICK_TIME=60*10000;//10 minutes
+	private static final int TICK_TIME=30*60000;//30 minutes
 	private static final int TICK_SUITEONE_TIME=15*1000;//15 seconds
 
 	//Log directory path
 	public static final String logDirectory="C:/ProductionWatchdog/Logs";
 	public static final int DAYS_TO_KEEP=32;//number of days that the logs are held into memory. If the files are older, then they are deleted.
 
-	//TreeMap of <machine_id,machine object>, used to keep track of connected machines.
+	//TreeMap of <machineId,machine object>, used to keep track of connected machines.
 	public static Map<Integer,Machine> machines=new TreeMap<Integer, Machine>();
 
 	//TreeMap of <error_id,error description>, used to keep track of errors
@@ -79,6 +81,7 @@ public class Launcher {
 	 * 
 	 */
 	public static void main(String[] args) {
+
 		//Allowing only one instance of the program at time.
 		checkIfRunning();
 
@@ -148,7 +151,7 @@ public class Launcher {
 	 * Routine that runs periodically every TICK_SUITEONE_TIME milliseconds to update the database content
 	 * 
 	 */
-	private static void tickSuiteOne(){
+	private static void tickSuiteOne() {
 
 		Thread t=new Thread() {
 			@Override
@@ -160,9 +163,8 @@ public class Launcher {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					System.out.println("TICK SUITEONE");
 					for (Machine m:machines.values()){
-						suiteOneDataBaseHandler.updateNumberOfPieces(m.machine_id,m.number_of_pieces_label.getText());
+						suiteOneDataBaseHandler.updateNumberOfPieces(m.machineId,m.number_of_pieces_label.getText(),new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
 					}
 				}
 
@@ -189,7 +191,6 @@ public class Launcher {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-					System.out.println("Running "+Thread.activeCount()+" Threads");
 					for (Machine m:machines.values()){
 						m.log("Tick - pieces="+m.number_of_pieces_label.getText()+" error="+m.error_label.getText(),
 								new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
@@ -214,7 +215,7 @@ public class Launcher {
 			public void run() {
 				//logging and saving to database
 				for (Machine m:machines.values()){
-					m.disconnect();
+					m.disconnectForClosing();
 					m.log("Closing application - pieces="+m.number_of_pieces_label.getText()+" error="+m.error_label.getText(),
 							new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 				}

@@ -20,11 +20,11 @@ import dev.soli.productionWatchdog.utils.Utils;
 public class MobileStationDataBaseHandler {
 
 	//Dedicated user, password and database;
-	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
+	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione?autoReconnect=true";
 	//private static final String USER = "mareca";
 	//private static final String PASSWORD="|VBSQQA_]_";
 	//private static final String dbName="mareca_produzione";
-	private static final String URL = "jdbc:mysql://127.0.0.1:3306/mareca";
+	private static final String URL = "jdbc:mysql://127.0.0.1:3306/mareca?autoReconnect=true";
 	private static final String USER = "mareca";
 	private static final String PASSWORD="|VBSQQA_]_";	
 	private static final String tableName="employee";

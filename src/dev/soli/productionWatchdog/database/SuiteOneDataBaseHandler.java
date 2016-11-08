@@ -20,10 +20,10 @@ import dev.soli.productionWatchdog.utils.Utils;
 public class SuiteOneDataBaseHandler {
 
 	//Dedicated user, password and database;
-	private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
-	private static final String dbName="mareca_produzione";
-	//private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
-	//private static final String dbName="mareca";
+	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione?autoReconnect=true";
+	//private static final String dbName="mareca_produzione";
+	private static final String URL = "jdbc:mysql://127.0.0.1:3306/mareca?autoReconnect=true";
+	private static final String dbName="mareca";
 	private static final String USER = "mareca";
 	private static final String PASSWORD="|VBSQQA_]_";
 	private static final String tableName="machines";
@@ -48,12 +48,12 @@ public class SuiteOneDataBaseHandler {
 			try {
 				statement.execute("CREATE TABLE IF NOT EXISTS "+tableName+" ("
 						+ "Codice_Macchina INT NOT NULL PRIMARY KEY,"
-						+ "Conta_Pezzi INT"
-						+ ");"
+						+ "Conta_Pezzi INT,"
+						+ "Data DATETIME);"
 						);
 			} catch (SQLException e) {
 				e.printStackTrace();
-				System.out.println("Error creating table machine");
+				System.out.println("Error creating table machines");
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -88,7 +88,8 @@ public class SuiteOneDataBaseHandler {
 	/**
 	 * 
 	 * Adds the passed machine ID to the table.
-	 * @param machine_id
+	 * 
+	 * @param machineId
 	 * 
 	 */
 	public void addMachine(int machine_id){
@@ -105,16 +106,17 @@ public class SuiteOneDataBaseHandler {
 
 	/**
 	 * 
-	 * @param machine_id
+	 * @param machineId
 	 * @param number_of_pieces
+	 * @param date
 	 * 
 	 */
-	public void updateNumberOfPieces(int machine_id, String number_of_pieces){
+	public void updateNumberOfPieces(int machine_id, String number_of_pieces, String date){
 
 		Statement s=null;
 		try {
 			s=connection.createStatement();
-			s.execute("update "+dbName+"."+tableName+" machines set Conta_Pezzi="+number_of_pieces+" where Codice_Macchina="+machine_id+";");
+			s.execute("UPDATE "+dbName+"."+tableName+" SET Conta_Pezzi="+number_of_pieces+", Data='"+date+"' WHERE Codice_Macchina="+machine_id+";");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

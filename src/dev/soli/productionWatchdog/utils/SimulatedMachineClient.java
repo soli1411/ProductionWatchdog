@@ -40,7 +40,7 @@ public class SimulatedMachineClient extends Thread {
 					//os.write(ByteBuffer.allocate(4).putInt(Integer.parseInt(a[0])).array());
 					//os.write(ByteBuffer.allocate(4).putInt(Integer.parseInt(a[1])).array());
 					//os.writeByte(Boolean.parseBoolean(a[2])==true?new Byte((byte) 0):new Byte((byte) 1));
-					os.write(((ByteBuffer.allocate(9).putInt(0, Integer.parseInt(a[0]))).putInt(4, Integer.parseInt(a[1]))).put(8,Boolean.parseBoolean(a[2])==true?new Byte((byte) 0):new Byte((byte) 1)).array());
+					os.write(((ByteBuffer.allocate(9).putInt(0, Integer.parseInt(a[0]))).putInt(4, Integer.parseInt(a[1]))).put(8,Boolean.parseBoolean(a[2])==true?new Byte((byte) 1):new Byte((byte) 0)).array());
 					os.flush();
 					Thread.sleep(1000);
 				} catch (Exception e) {
@@ -59,10 +59,12 @@ public class SimulatedMachineClient extends Thread {
 		JFrame frame=new JFrame("SimulatedMachinesClients");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
-		//for (int i=1;i<40;i++){
 		SimulatedMachineClient t=new SimulatedMachineClient(5);
 		t.start();
-		//}
+		/*for (int i=1;i<40;i++){
+		SimulatedMachineClient t=new SimulatedMachineClient(i);
+		t.start();
+		}*/
 	}
 
 }

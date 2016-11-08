@@ -286,7 +286,7 @@ public class Window {
 				Thread t;
 				t = new Thread() {
 					public void run() {
-						TimelineCharts.showDurationTable();
+						Charts.showDurationTable();
 					}
 				};
 				t.start();
@@ -306,7 +306,7 @@ public class Window {
 				Thread t;
 				t = new Thread() {
 					public void run() {
-						TimelineCharts.timeLineChart();
+						Charts.timeLineChart();
 					}
 				};
 				t.start();

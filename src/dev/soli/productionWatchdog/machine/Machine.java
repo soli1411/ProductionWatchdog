@@ -31,24 +31,20 @@ import dev.soli.productionWatchdog.utils.Utils;
 
 public class Machine {
 
-	public int machine_id;	
-	private String log_path;
+	public int machineId;	
+	private String logPath;
 
-	//Errors variables
-	private enum MachineState { RUNNING, IN_ERRROR, RESET, NO_CONNECTION, APPLICATION_CLOSED, CHANGED_ARTICLE, CHANGED_MULTIPLIER };
-	private MachineState state;
-	public boolean errorState=false;
-	private static final long TIME_FOR_RUNNING_STATE=180*1000000000L;//after this time (expressed as number of seconds * second in nanoseconds) elapses from an error event 
+	private static final long TIME_FOR_RUNNING_STATE=4*1000000000L;//TODO: set to 3 minutes//after this time (expressed as number of seconds * second in nanoseconds) elapses from an error event 
 	//and the machine has been running, it can be considered running.
-	private long timeAtLastErrorEnd=0;
-	public int errorHappened=-6;
-	public int error_info=-3;
-	private int multiplier=1;
+	private long timeAtLastErrorEnd;
+	private int errorInfo;
+	private boolean errorState;
+	private int multiplier;
 
 	//Connection variables
-	private static final int portOffset=3000;//port number at which the ports starts to be assigned. 
+	private static final int PORT_OFFSET=3000;//port number at which the ports starts to be assigned. 
 	//if you change this, you will have to change the port number in the machine code.
-	private static final int socket_timeout=60000;//60 seconds: time for client to respond to server in milliseconds 
+	private static final int SOCKET_TIMEOUT=60000;//60 seconds: time for client to respond to server in milliseconds 
 	//before server assumes that connection is lost.
 	private int port;
 	private boolean connected;
@@ -68,15 +64,16 @@ public class Machine {
 	 * Creates an instance of an object representing a machine.
 	 * It has its own port for the connection thread, its own panel in the window and its own voice in the database.
 	 * 
-	 * @param machine_id
+	 * @param machineId
 	 * 
 	 */
 	public Machine(int machine_id) {
 
-		this.machine_id=machine_id;
-		this.state=MachineState.NO_CONNECTION;
-		log_path=Launcher.logDirectory+"/Machine_"+this.machine_id+"/"+Utils.getDayAndMonth()+".txt";
-		timeAtLastErrorEnd=System.nanoTime()-TIME_FOR_RUNNING_STATE;//so that the machine if when connect is running has a background of (238,238,238)
+		this.machineId=machine_id;
+		errorState=true;
+		errorInfo=-2;
+		logPath=Launcher.logDirectory+"/Machine_"+this.machineId+"/"+Utils.getDayAndMonth()+".txt";
+		timeAtLastErrorEnd=System.nanoTime()-TIME_FOR_RUNNING_STATE-1000L;//so that when the application is started a log is done.
 
 		//Graphic
 		addMachineOnGui();//also retrieves value of number of pieces made from database
@@ -86,7 +83,7 @@ public class Machine {
 
 		//Connection
 		connected=false;
-		port=portOffset+machine_id;
+		port=PORT_OFFSET+machine_id;
 		connect();
 
 	}
@@ -100,35 +97,9 @@ public class Machine {
 	 */
 	private void handleError(int error,Boolean running) {
 
-		errorHappened=error;
-
-		switch (state) {
-		case IN_ERRROR:
-			error_info=1;
-			break;
-		case RUNNING:
-			error_info=0;
-			break;
-		case RESET:
-			error_info=-1;
-			break;
-		case NO_CONNECTION:
-			error_info=-2;
-			break;
-		case APPLICATION_CLOSED:
-			error_info=-3;
-			break;
-		case CHANGED_ARTICLE:
-			error_info=-4;
-			break;
-		case CHANGED_MULTIPLIER:
-			error_info=-5;
-			break;
-		default:
-			break;
-		}
-		if (state==MachineState.RUNNING){
+		if (running) {
 			if (System.nanoTime()-timeAtLastErrorEnd>TIME_FOR_RUNNING_STATE) {//Actually running
+				errorInfo=0;
 				error_label.setText("Running");
 				panel.setBackground(new Color(238,238,238));
 				if (errorState){
@@ -136,13 +107,14 @@ public class Machine {
 					log("Production started "+number_of_pieces_label.getText(),
 							new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date(new Date().getTime()-TIME_FOR_RUNNING_STATE/1000000)));
 				}
-			} else {//Running, but not sure if for testing or if it's all OK
+			} else {//Running, but not sure if for testing or if it's all OK -> no log required.
 				error_label.setText("Running, but has recently stopped");
 				panel.setBackground(new Color(255,255,0));
 			}
-		} else if (state==MachineState.IN_ERRROR) {
+		} else {
 			timeAtLastErrorEnd=System.nanoTime();
 			String errorDescription=Launcher.errors.get(error);
+			errorInfo=error;
 			error_label.setText(errorDescription);
 			panel.setBackground(Utils.colors[error]);
 			if (errorState==false) {//Switched from running to stopped
@@ -152,7 +124,6 @@ public class Machine {
 				log("Production stopped beacuse of error "+error+" - "+errorDescription+" - "+number_of_pieces_label.getText(),
 						new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 			}
-
 		}
 
 	}
@@ -171,13 +142,15 @@ public class Machine {
 				try {
 					serverSocket=new ServerSocket(port);//Each machine must have a different port for communication
 					serverSocket.setReuseAddress(true);
-					serverSocket.setSoTimeout(socket_timeout);//After socket_timeout milliseconds of a non-responding connection the socket is closed
+					serverSocket.setSoTimeout(SOCKET_TIMEOUT);//After SOCKET_TIMEOUT milliseconds of a non-responding connection the socket is closed
 				} catch (IOException e) {
-					state=MachineState.NO_CONNECTION;
+					errorState=true;
+					errorInfo=-2;
 					error_label.setText("Connection failed, reconnect manually");
 					System.out.println("Cannot create socket on port "+port);//Usually happens if port is already in use
+					log("Lost connection - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 				}
-				System.out.println("Waiting for client "+machine_id);
+				System.out.println("Waiting for client "+machineId);
 				try {
 					socket=serverSocket.accept();//beginning of actual connection
 					connected=true;
@@ -189,15 +162,19 @@ public class Machine {
 				} catch (InterruptedIOException iioe) {
 					System.out.println("Connection failed");
 					connected=false;
-					state=MachineState.NO_CONNECTION;
+					errorState=true;
+					errorInfo=-2;
 					error_label.setText("Connection failed, reconnect manually");
 					panel.setBackground(new Color(255,0,0));
+					log("Lost connection - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 				} catch (IOException e1) {
 					System.out.println("Connection failed");
 					connected=false;
-					state=MachineState.NO_CONNECTION;
+					errorState=true;
+					errorInfo=-2;
 					error_label.setText("Connection failed, reconnect manually");
 					panel.setBackground(new Color(255,0,0));
+					log("Lost connection - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 				}
 			}
 		};
@@ -215,39 +192,50 @@ public class Machine {
 
 		try {
 			dataInputStream = new DataInputStream(socket.getInputStream());
-			Integer number_of_error=-1,number_of_pieces=0;
+			Integer number_of_error=-1,number_of_pieces=-1;
 			Boolean running=false;
 			while(connected==true) {
 				try {
-					socket.setSoTimeout(socket_timeout);
+					socket.setSoTimeout(SOCKET_TIMEOUT);
 					byte[] a=new byte[18];//first 4 bytes first UDINT, second 4 bytes second UDINT, last bit of last byte equals !running
 					dataInputStream.read(a);
-					number_of_pieces=Utils.byteArrayToInt(Arrays.copyOfRange(a,0,4))*multiplier;//Type can be changed, but the change must be here and in the plc's code
+					number_of_pieces=Utils.byteArrayToInt(Arrays.copyOfRange(a,0,4));//Type can be changed, but the change must be here and in the plc's code
 					number_of_error=Utils.byteArrayToInt(Arrays.copyOfRange(a,4,8));//Type can be changed, but the change must be here and in the plc's code
 					number_of_error=number_of_error==0?43:number_of_error;//Changing mapping of error 0 in the machine for possible problems avoidance
-					running=(a[8]&1)==0?false:true;//Type can be changed, but the change must be here and in the plc's code
+					running=(a[8]&1)==0?false:true;//TODO: verify correctness of this //Type can be changed, but the change must be here and in the plc's code
 				} catch (InterruptedIOException e) {
 					dataInputStream.close();
 					System.out.println("Client isn't responding...\nTrying to restart connection...");
 					connected=false;
-					state=MachineState.NO_CONNECTION;
+					errorState=true;
+					errorInfo=-2;
 					error_label.setText("Connection failed! Trying to restart connection...");
 					panel.setBackground(new Color(255,0,0));
+					log("Lost connection - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 					reconnect();//Trying to reconnect
 					e.printStackTrace();
 					break;
 				}
-				state=running?MachineState.RUNNING:MachineState.IN_ERRROR;
-				number_of_pieces_label.setText(number_of_pieces.toString());
 				error_label.setText(Launcher.errors.get(number_of_error));
+				if (number_of_pieces<(Integer.parseInt(number_of_pieces_label.getText())/multiplier)){//Reset
+					errorInfo=-1;
+					number_of_pieces_label.setText(""+(number_of_pieces*multiplier));
+					log("Reset - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
+					errorState=true;
+					timeAtLastErrorEnd=System.nanoTime()-TIME_FOR_RUNNING_STATE-1000L;//so that when the restart happens a running log is done.
+					continue;
+				}
+				number_of_pieces_label.setText(""+(number_of_pieces*multiplier));
 				handleError(number_of_error,running);
 			}
 		} catch (IOException e) {
 			System.out.println("CONNECTION INTERRUPTED...\nTrying to restart connection...");
 			connected=false;
-			state=MachineState.NO_CONNECTION;
+			errorState=true;
+			errorInfo=-2;
 			error_label.setText("Connection failed! Trying to restart connection...");
 			panel.setBackground(new Color(255,0,0));
+			log("Lost connection - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 			reconnect();//Trying to reconnect automatically because it can be that the connection isn't stable
 		}
 
@@ -271,13 +259,14 @@ public class Machine {
 				if (dataInputStream!=null)
 					dataInputStream.close();
 				connected=false;
-				state=MachineState.NO_CONNECTION;
-				System.out.println("Closed connection with machine "+machine_id);
+				errorState=true;
+				errorInfo=-2;
 				error_label.setText("Reconnecting...");
+				System.out.println("Closed connection with machine "+machineId);
 				panel.setBackground(new Color(255,255,0));
 				connect();
 			} catch (IOException e) {
-				System.out.println("Couldn't close connection with machine "+machine_id);
+				System.out.println("Couldn't close connection with machine "+machineId);
 			}
 		} else {
 			System.out.println("already connected, can't reconnect");
@@ -290,7 +279,7 @@ public class Machine {
 	 * Closes the connection with the machine.
 	 * 
 	 */
-	public void disconnect(){
+	public void disconnectForClosing() {
 
 		if (connected){
 			try {
@@ -302,60 +291,11 @@ public class Machine {
 					dataInputStream.close();
 				connected=false;
 			} catch (IOException e) {
-				System.out.println("Couldn't close connection with machine "+machine_id);
+				System.out.println("Couldn't close connection with machine "+machineId);
 			}
 		}
-		state=MachineState.APPLICATION_CLOSED;
-		error_info=-3;
+		errorInfo=-3;
 		error_label.setText("Application closed");
-
-	}
-
-	/**
-	 * 
-	 * Resets the errors and the number of pieces made by the current machine because a new production may be started.
-	 * 
-	 */
-	public void reset() {
-
-		number_of_pieces_label.setText("0");
-		errorHappened=-1;
-		error_info=-1;
-		errorState=false;
-		state=MachineState.RESET;
-		log("Reset - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
-				new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
-
-	}
-
-	/**
-	 * 
-	 * Logs to file the state of the machine: it writes the number of pieces made until now, the state of error,
-	 * the current time as a TimeStamp and a description.
-	 * 
-	 */
-	public void log(String logDescription, String timeStamp) {
-
-		log_path=Launcher.logDirectory+"/Machine_"+this.machine_id+"/"+Utils.getDayAndMonth()+".txt";
-		File logFile = new File(log_path);
-		if(!logFile.exists()) {
-			try {
-				logFile.getParentFile().mkdirs();
-				logFile.createNewFile();
-			} catch (IOException e) {
-				System.out.println("Couldn't create log file for "+Utils.getDayAndMonth());
-			}
-		}
-		try (PrintStream out = new PrintStream(new FileOutputStream(log_path,true))) {
-			if (!number_of_pieces_label.getText().equals("NaN"))
-				out.println(timeStamp + " machine " + machine_id +" "+logDescription);
-			out.close();
-		} catch (FileNotFoundException e) {
-			System.out.println("File not found!");
-		}
-		Launcher.machineDatabaseHandler.updateDatabase(machine_id, article_in_production_label.getText(), 
-				number_of_pieces_label.getText(), Integer.parseInt(pieces_multiplier_label.getText()), 
-				errorHappened, error_info);
 
 	}
 
@@ -366,13 +306,15 @@ public class Machine {
 	 * @param newArticle
 	 * 
 	 */
-	public void setArticleInProduction(String newArticle){
+	public void setArticleInProduction(String newArticle) {
 
-		if (!newArticle.equals("") && !newArticle.equals(null))
+		if (!newArticle.equals("") && !newArticle.equals(null)){
 			article_in_production_label.setText(newArticle);
-		error_info=-4;
-		log("Changed article in production - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
-				new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
+			errorInfo=-4;
+			Launcher.machineDatabaseHandler.updateArticleInProduction(machineId, newArticle);
+			logToFile("Changed article in production - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
+					new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
+		}
 
 	}
 
@@ -383,14 +325,16 @@ public class Machine {
 	 * @param newMoltiplier
 	 * 
 	 */
-	public void setMultiplier(int newMultiplier){
+	public void setMultiplier(int newMultiplier) {
 
 		if (newMultiplier<=0)
 			return;
+		number_of_pieces_label.setText(""+Integer.parseInt(number_of_pieces_label.getText())/multiplier*newMultiplier);
+		multiplier=newMultiplier;
 		pieces_multiplier_label.setText(""+newMultiplier);
-		multiplier=Integer.parseInt(pieces_multiplier_label.getText());
-		error_info=-5;
-		log("Changed multiplier - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
+		errorInfo=-5;
+		Launcher.machineDatabaseHandler.updateMultiplier(machineId, newMultiplier);
+		logToFile("Changed multiplier - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
 				new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
 
 	}
@@ -403,15 +347,68 @@ public class Machine {
 	 * @param newArticle
 	 * 
 	 */
-	public void startNewProduction(int newMultiplier, String newArticle){
+	public void startNewProduction(int newMultiplier, String newArticle) {
 
 		if (newMultiplier<=0)
 			return;
+		number_of_pieces_label.setText(""+Integer.parseInt(number_of_pieces_label.getText())/multiplier*newMultiplier);
 		pieces_multiplier_label.setText(""+newMultiplier);
-		multiplier=Integer.parseInt(pieces_multiplier_label.getText());
+		multiplier=newMultiplier;
 		if (!newArticle.equals("") && !newArticle.equals(null))
 			article_in_production_label.setText(newArticle);
-		reset();
+		number_of_pieces_label.setText("-1");
+		Launcher.machineDatabaseHandler.updateMultiplier(machineId, newMultiplier);
+		Launcher.machineDatabaseHandler.updateArticleInProduction(machineId, newArticle);
+		logToFile("Reset - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
+				new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
+
+	}
+
+	/**
+	 * 
+	 * Logs to file the state of the machine: it writes the number of pieces made until now, the state of error,
+	 * the current time as a TimeStamp and a description of the event that caused the log.
+	 * 
+	 * @param logDescription: describes the event that caused the log.
+	 * @param timeStamp: time at which the event occurred.
+	 * 
+	 */
+	private void logToFile(String logDescription, String timeStamp) {
+
+		logPath=Launcher.logDirectory+"/Machine_"+this.machineId+"/"+Utils.getDayAndMonth()+".txt";
+		File logFile = new File(logPath);
+		if(!logFile.exists()) {
+			try {
+				logFile.getParentFile().mkdirs();
+				logFile.createNewFile();
+			} catch (IOException e) {
+				System.out.println("Couldn't create log file for "+Utils.getDayAndMonth());
+			}
+		}
+		try (PrintStream out = new PrintStream(new FileOutputStream(logPath,true))) {
+			if (!number_of_pieces_label.getText().equals("NaN"))
+				out.println(timeStamp + " machine " + machineId +" "+logDescription);
+			out.close();
+		} catch (FileNotFoundException e) {
+			System.out.println("File not found!");
+		}
+
+	}
+
+	/**
+	 * 
+	 * Logs to file and to the database the state of the machine: it writes the number of pieces made until now, the state of error,
+	 * the current time as a TimeStamp and a description.
+	 * 
+	 * @param logDescription: describes the event that caused the log.
+	 * @param timeStamp: time at which the event occurred.
+	 * 
+	 */
+	public void log(String logDescription, String timeStamp) {
+
+		logToFile(logDescription,timeStamp);
+		Launcher.machineDatabaseHandler.updateMachine(machineId,article_in_production_label.getText(), 
+				number_of_pieces_label.getText(),Integer.parseInt(pieces_multiplier_label.getText()),errorInfo);
 
 	}
 
@@ -423,7 +420,7 @@ public class Machine {
 	 * 	the error that the machine encountered,
 	 * 	a button to delete data and connection about this machine.
 	 * 
-	 * @param machine_id
+	 * @param machineId
 	 * @param pieces
 	 * @param error_code
 	 *
@@ -431,28 +428,18 @@ public class Machine {
 	private void addMachineOnGui() {
 
 		panel=new JPanel();
-		JLabel machine_id_label=new JLabel("Machine_"+machine_id);
-		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(""+machine_id));
-		if (number_of_pieces_label.getText().equals("") || number_of_pieces_label.getText().equals(null))
-			number_of_pieces_label.setText("0");
+		JLabel machine_id_label=new JLabel("Machine_"+machineId);
+		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(machineId));
 		error_label=new JLabel("Connecting...");
-		panel.add(machine_id_label);
-		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(""+machine_id));
-		if (article_in_production_label.getText().equals("") || article_in_production_label.getText().equals(null))
-			article_in_production_label.setText("NONE");
-		//on click edit text
+		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(machineId));
 		article_in_production_label.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e){
 				setArticleInProduction(JOptionPane.showInputDialog("Please enter the new article:"));
 			}
 		});
-		panel.add(article_in_production_label);
-		pieces_multiplier_label=new JLabel(Launcher.machineDatabaseHandler.getMultiplier(""+machine_id));
-		if (pieces_multiplier_label.getText().equals("") || pieces_multiplier_label.getText().equals(null))
-			pieces_multiplier_label.setText("1");
+		pieces_multiplier_label=new JLabel(Launcher.machineDatabaseHandler.getMultiplier(machineId));
 		multiplier=Integer.parseInt(pieces_multiplier_label.getText());
-		//on click set multiplier
 		pieces_multiplier_label.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseClicked(MouseEvent e){
@@ -464,6 +451,8 @@ public class Machine {
 				}
 			}
 		});
+		panel.add(machine_id_label);
+		panel.add(article_in_production_label);
 		panel.add(pieces_multiplier_label);
 		panel.add(number_of_pieces_label);
 		panel.add(error_label);
@@ -489,7 +478,7 @@ public class Machine {
 			}
 		});
 		panel.add(button);
-		panel.setBorder(BorderFactory.createTitledBorder("Machine " + machine_id));
+		panel.setBorder(BorderFactory.createTitledBorder("Machine " + machineId));
 		GridLayout layout = new GridLayout();
 		panel.setLayout(layout);
 		Window.panel.add(panel);

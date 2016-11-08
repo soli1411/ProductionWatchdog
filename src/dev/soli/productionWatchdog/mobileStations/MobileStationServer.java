@@ -84,7 +84,7 @@ public class MobileStationServer extends Thread{
 		//TODO: employee-actions database related part.
 
 		//EmployeeId - ActivityName - Request data
-		//employeeId - NewProductionActivity - machine_id - multiplier - newArticle
+		//employeeId - NewProductionActivity - machineId - multiplier - newArticle
 		//employeeId - CheckQuotes TODO:implement this operation and ask for specifications.
 		//employeeId - GetMachinesState - ',' separated machine_ids values //TODO: eliminate this activity
 		//employeeId - GetAllMachinesState
@@ -98,7 +98,7 @@ public class MobileStationServer extends Thread{
 		String description=desc.toString();
 		if (activityName.equals("NewProductionActivity")){
 			Machine m=Launcher.machines.get(Integer.parseInt(inputParts[2]));
-			System.out.println(m.machine_id+" i=3 "+inputParts[3]+" i=4 "+inputParts[4]);
+			System.out.println(m.machineId+" i=3 "+inputParts[3]+" i=4 "+inputParts[4]);
 			m.setMultiplier(Integer.parseInt(inputParts[3]));
 			m.setArticleInProduction(inputParts[4]);
 			return "DONE!";
@@ -106,15 +106,15 @@ public class MobileStationServer extends Thread{
 		} else if (activityName.equals("GetAllMachinesState")){
 			String response="";
 			for (Machine m:Launcher.machines.values()){
-				response+=m.machine_id+" "+m.article_in_production_label.getText()+" "+m.pieces_multiplier_label.getText()+" "+m.number_of_pieces_label.getText()
-					+" "+m.error_label.getText()+";";
+				response+=m.machineId+" "+m.article_in_production_label.getText()+" "+m.pieces_multiplier_label.getText()+" "+m.number_of_pieces_label.getText()
+				+" "+m.error_label.getText()+";";
 			}
 			return response;
 		} else if (activityName.equals("CheckQuotes")){
 
 		}
 		return "FAIL";
-		
+
 	}
 
 }

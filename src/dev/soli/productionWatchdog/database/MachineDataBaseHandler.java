@@ -32,11 +32,11 @@ import dev.soli.productionWatchdog.utils.Utils;
 public class MachineDataBaseHandler {
 
 	//Dedicated user, password and database;
-	private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione";
-	public static final String dbName="mareca_produzione";
-	//private static final String URL = "jdbc:mysql://127.0.0.1:3306/";
-	//private static final String dbName="mareca";
-	private static final String USER = "mareca";
+	//private static final String URL = "jdbc:mysql://192.168.1.223/mareca_produzione?autoReconnect=true";
+	//public static final String dbName="mareca_produzione";
+	private static final String URL="jdbc:mysql://127.0.0.1:3306/mareca?autoReconnect=true";
+	public static final String dbName="mareca";
+	private static final String USER="mareca";
 	private static final String PASSWORD="|VBSQQA_]_";
 	private static boolean db_connected;
 	private static Connection connection;
@@ -63,8 +63,7 @@ public class MachineDataBaseHandler {
 							+ "article_in_production VARCHAR(50) NOT NULL,"
 							+ "number_of_pieces INT,"
 							+ "multiplier INT UNSIGNED,"
-							+ "error_code INT,"
-							+ "error_state TINYINT"
+							+ "error_code INT"
 							+ ");"
 							);
 				}
@@ -104,16 +103,16 @@ public class MachineDataBaseHandler {
 
 	/**
 	 * 
-	 * @param machine_id
+	 * @param machineId
 	 * @returns the latest number of pieces saved in the database for the specified machine.
 	 * 
 	 */
-	public int getNumberOfPieces(String machine_id) {
+	public int getNumberOfPieces(int machine_id) {
 
 		ResultSet rs=null;
 		try {
 			Statement statement=connection.createStatement();
-			rs = statement.executeQuery("select number_of_pieces from "+dbName+".machine_"+machine_id+" order by date desc limit 1;");//gets the last entry in order of date
+			rs = statement.executeQuery("select number_of_pieces from "+dbName+".machine_"+machine_id+" ORDER BY date DESC LIMIT 1;");//gets the last entry in order of date
 		} catch (SQLException e) {
 			System.out.println("Couldn't retrieve the number of pieces for the machine "+machine_id);
 			e.printStackTrace();
@@ -132,21 +131,21 @@ public class MachineDataBaseHandler {
 
 	/**
 	 * 
-	 * @param machine_id
+	 * @param machineId
 	 * @returns the number of pieces saved in the database for the specified machine.
 	 * 
 	 */
-	public String getArticleInProduction(String machine_id){
+	public String getArticleInProduction(int machine_id) {
 
 		ResultSet rs=null;
 		try {
 			Statement statement=connection.createStatement();
-			rs = statement.executeQuery("SELECT article_in_production FROM "+dbName+".machine_"+machine_id+";");
+			rs = statement.executeQuery("SELECT article_in_production FROM "+dbName+".machine_"+machine_id+" ORDER BY date DESC LIMIT 1;");
 		} catch (SQLException e) {
 			System.out.println("Couldn't retrieve the article in production for the machine "+machine_id);
 			e.printStackTrace();
 		}
-		String res="";
+		String res="NONE";
 		try {
 			while (rs.next()){
 				res = rs.getString("article_in_production");
@@ -160,24 +159,53 @@ public class MachineDataBaseHandler {
 
 	/**
 	 * 
-	 * @param machine_id
+	 * @param machineId
 	 * @returns the multiplier saved in the database for the specified machine.
 	 * 
 	 */
-	public String getMultiplier(String machine_id){
+	public String getMultiplier(int machine_id) {
 
 		ResultSet rs=null;
 		try {
 			Statement statement=connection.createStatement();
-			rs = statement.executeQuery("SELECT multiplier FROM "+dbName+".machine_"+machine_id+";");
+			rs = statement.executeQuery("SELECT multiplier FROM "+dbName+".machine_"+machine_id+" ORDER BY date DESC LIMIT 1;");
 		} catch (SQLException e) {
 			System.out.println("Couldn't retrieve the multiplier for the machine "+machine_id);
 			e.printStackTrace();
 		}
-		String res="";
+		String res="1";
 		try {
 			while (rs.next()){
+				System.out.println(rs.getString("multiplier"));
 				res = rs.getString("multiplier");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return res;
+
+	}
+
+	/**
+	 * 
+	 * @param machine_id
+	 * @returns the last date at which the machine was reset.
+	 * 
+	 */
+	private String getLastResetDate(int machine_id) {
+
+		ResultSet rs=null;
+		try {
+			Statement statement=connection.createStatement();
+			rs = statement.executeQuery("SELECT date FROM "+dbName+".machine_"+machine_id+" WHERE error_code=-1 ORDER BY date DESC LIMIT 1;");
+		} catch (SQLException e) {
+			System.out.println("Couldn't retrieve the last reset date for the machine "+machine_id);
+			e.printStackTrace();
+		}
+		String res="1970-01-01 00:00:00";
+		try {
+			while (rs.next()){
+				res=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rs.getTimestamp("date"));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -190,14 +218,14 @@ public class MachineDataBaseHandler {
 	 * 
 	 * Adds a new entry to the database of the machine specified that logs the data received as parameters.
 	 * 
-	 * @param machine_id
+	 * @param machineId
 	 * @param article_in_production
 	 * @param number_of_pieces
+	 * @param multiplier
 	 * @param error_code
-	 * @param error_state
 	 * 
 	 */
-	public void updateDatabase(int machine_id, String article_in_production, String number_of_pieces, int multiplier, int error_code, int error_state) {
+	public void updateMachine(int machine_id, String article_in_production, String number_of_pieces, int multiplier, int error_code) {
 
 		Date dt = new Date();
 		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -205,12 +233,66 @@ public class MachineDataBaseHandler {
 		Statement statement=null;
 		try {
 			statement = connection.createStatement();
-		} catch (SQLException e1) {
-			e1.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 		try {
-			statement.execute("INSERT INTO "+dbName+".machine_"+machine_id+" (date,article_in_production,number_of_pieces,multiplier,error_code,error_state) "
-					+ "VALUES('"+currentTime+"','"+article_in_production+"',"+number_of_pieces+","+multiplier+","+error_code+","+error_state+");");
+			statement.execute("INSERT INTO "+dbName+".machine_"+machine_id+" (date,article_in_production,number_of_pieces,multiplier,error_code) "
+					+ "VALUES('"+currentTime+"','"+article_in_production+"',"+number_of_pieces+","+multiplier+","+error_code+");");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Couldn't update database!");
+		}
+
+	}
+
+	/**
+	 * 
+	 * Updates the multiplier for the current production: it changes the multiplier to the new one specified
+	 * for all database logs starting from the last reset date.
+	 * 
+	 * @param machine_id
+	 * @param multplier the new multiplier.
+	 * 
+	 */
+	public void updateMultiplier(int machine_id, int multiplier) {
+
+		String date=getLastResetDate(machine_id);
+		Statement statement=null;
+		try {
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		try {
+			statement.execute("UPDATE "+dbName+".machine_"+machine_id+" SET multiplier="+multiplier+" WHERE date>'"+date+"';");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Couldn't update database!");
+		}
+
+	}
+
+	/**
+	 * 
+	 * Updates the article in production for the current production: it changes the article to the new one specified
+	 * for all database logs starting from the last reset date.
+	 * 
+	 * @param machine_id
+	 * @param article_in_production the new article in production.
+	 * 
+	 */
+	public void updateArticleInProduction(int machine_id, String article_in_production) {
+
+		String date=getLastResetDate(machine_id);
+		Statement statement=null;
+		try {
+			statement = connection.createStatement();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		try {
+			statement.execute("UPDATE "+dbName+".machine_"+machine_id+" SET article_in_production='"+article_in_production+"' WHERE date>'"+date+"';");
 		} catch (SQLException e) {
 			e.printStackTrace();
 			System.out.println("Couldn't update database!");
