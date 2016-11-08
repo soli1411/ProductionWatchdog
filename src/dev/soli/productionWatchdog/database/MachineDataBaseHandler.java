@@ -225,7 +225,7 @@ public class MachineDataBaseHandler {
 	 * @param error_code
 	 * 
 	 */
-	public void updateMachine(int machine_id, String article_in_production, String number_of_pieces, int multiplier, int error_code) {
+	public void updateMachine(int machine_id, String article_in_production, int number_of_pieces, int multiplier, int error_code) {
 
 		Date dt = new Date();
 		SimpleDateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

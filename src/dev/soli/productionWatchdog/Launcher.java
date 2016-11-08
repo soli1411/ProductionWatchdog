@@ -38,8 +38,6 @@ import dev.soli.productionWatchdog.utils.Utils;
  */
 public class Launcher {
 
-	//TODO: handling of multipliers & number of pieces: store only the number not multiplied in db, and the multiplier, show calculus on GUI.
-
 	//TODO: documentation in read_me.txt about the usage for the users.
 	//TODO: finish employee database and mobile stations part.
 

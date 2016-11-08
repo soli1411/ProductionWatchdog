@@ -14,6 +14,14 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.table.TableModel;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import dev.soli.productionWatchdog.Launcher;
 import dev.soli.productionWatchdog.GUI.Window;
@@ -287,6 +295,62 @@ public class Utils {
 
 	/**
 	 * 
+	 * Opens the default application associated with that file format.
+	 * 
+	 * @param path
+	 * 
+	 */
+	public static void openFile(String path) {
+
+		Desktop desktop = Desktop.getDesktop();
+		if (!desktop.isSupported(Desktop.Action.EDIT)) {
+			System.err.println("EDIT not supported");
+			return;
+		}
+		try {
+			desktop.open(new File(path));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * 
+	 * Writes a JTable to an excel file.
+	 * 
+	 * @param table
+	 * @param path
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * 
+	 */
+	public static void writeToExcell(JTable table, String path) throws FileNotFoundException, IOException {
+
+		new WorkbookFactory();
+		Workbook wb = new XSSFWorkbook(); //Excel workbook
+		Sheet sheet = wb.createSheet(); //WorkSheet
+		Row row = sheet.createRow(2); //Row created at line 3
+		TableModel model = table.getModel(); //Table model
+		Row headerRow = sheet.createRow(0); //Create row at line 0
+		for(int headings = 0; headings < model.getColumnCount(); headings++){ //For each column
+			headerRow.createCell(headings).setCellValue(model.getColumnName(headings));//Write column name
+		}
+		for(int rows = 0; rows < model.getRowCount(); rows++){ //For each table row
+			for(int cols = 0; cols < table.getColumnCount(); cols++){ //For each table column
+				row.createCell(cols).setCellValue(model.getValueAt(rows, cols).toString()); //Write value
+			}
+			//Set the row to the next one in the sequence 
+			row = sheet.createRow((rows + 3)); 
+		}
+		wb.write(new FileOutputStream(path));//Save the file     
+		wb.close();
+		openFile(path);
+
+	}
+
+	/**
+	 * 
 	 * Displays on the GUI the content of the database related to the user selected machine.
 	 * 
 	 */
@@ -300,7 +364,7 @@ public class Utils {
 		String textStr[] = file.split("\\r\\n|\\n|\\r");
 		String machine_id = (String) JOptionPane.showInputDialog(null,"Choose a machine for the table:",
 				"Choose a machine",JOptionPane.QUESTION_MESSAGE,null,textStr,textStr[1]);
-		if (!machine_id.equals(null)){
+		if (!(machine_id==null)){
 			MachineDataBaseHandler.showDataBaseOnGui(machine_id);
 		}
 

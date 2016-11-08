@@ -50,6 +50,7 @@ public class Charts {
 	 * 
 	 */
 	private static void displayTimelineCharts(ArrayList<String> machinesToChart,String startDate, String endDate) {
+		
 		for (String machine_id:machinesToChart){
 			JFrame f=new JFrame("Machine_"+machine_id+" timeline chart");
 			TimePeriodValuesCollection timeLineDataset=createTimeLineDataset(machine_id,startDate,endDate);
@@ -73,6 +74,7 @@ public class Charts {
 			f.setExtendedState(ApplicationFrame.MAXIMIZED_BOTH);
 			f.setVisible(true);
 		}
+		
 	}
 
 	/**
@@ -82,13 +84,15 @@ public class Charts {
 	 * 
 	 */
 	private static String convertDuration(long duration){
+		
 		long seconds=duration/1000L;
 		long minutes=seconds/60L;
 		long hours=minutes/60L;
 		long days=hours/24L; 
 		return String.format("%02d : %02d : %02d : %02d",days,hours%24L,minutes%60L,seconds%60L);
+		
 	}
-
+	
 	/**
 	 * 
 	 * Displays a JTable containing the sum of the errors duration divided by article in production.
@@ -96,10 +100,10 @@ public class Charts {
 	 * 
 	 */
 	private static void showTotalErrorDuration(int machine_id) {
-		//TODO: show in excel (?) http://stackoverflow.com/questions/22560566/export-jtable-in-excel-file
+
 		Statement statement=null;
 		ResultSet rs=null;
-		try{
+		try {
 			statement=MachineDataBaseHandler.getConnection().createStatement();
 			String s = "select * from machine_"+machine_id+";";
 			rs=statement.executeQuery(s);
@@ -156,6 +160,8 @@ public class Charts {
 			panel.add(jsp,BorderLayout.CENTER);
 			frame.setContentPane(panel);
 			frame.setVisible(true);
+
+			Utils.writeToExcell(table,"C:/ProductionWatchdog/JTable.xlsx");
 		}catch(Exception e){
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "ERROR");
@@ -179,6 +185,7 @@ public class Charts {
 	 * 
 	 */
 	private static TimePeriodValuesCollection createTimeLineDataset(String machine_id,String startDate, String endDate) {
+		
 		TimePeriodValuesCollection dataset = new TimePeriodValuesCollection();
 		Statement c=null;
 		try {
@@ -218,6 +225,7 @@ public class Charts {
 			e.printStackTrace();
 		}
 		return dataset;
+		
 	}
 
 	/**
@@ -271,7 +279,6 @@ public class Charts {
 		frame.pack();
 		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
-
 
 	}
 

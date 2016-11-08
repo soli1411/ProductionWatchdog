@@ -249,8 +249,8 @@ public class Machine {
 	private void reconnect() {
 
 		if (connected==false 
-				&& !error_label.getText().equals("Reconnecting...") 
-				&& !error_label.getText().equals("Connecting...")){
+				&& !error_label.getText().equals("Reconnecting...")
+				&& !error_label.getText().equals("Connecting...")) {
 			try {
 				if (socket!=null && !socket.isClosed())
 					socket.close();
@@ -308,7 +308,7 @@ public class Machine {
 	 */
 	public void setArticleInProduction(String newArticle) {
 
-		if (!newArticle.equals("") && !newArticle.equals(null)){
+		if (!newArticle.equals("") && !(newArticle==null)){
 			article_in_production_label.setText(newArticle);
 			errorInfo=-4;
 			Launcher.machineDatabaseHandler.updateArticleInProduction(machineId, newArticle);
@@ -330,8 +330,8 @@ public class Machine {
 		if (newMultiplier<=0)
 			return;
 		number_of_pieces_label.setText(""+Integer.parseInt(number_of_pieces_label.getText())/multiplier*newMultiplier);
-		multiplier=newMultiplier;
 		pieces_multiplier_label.setText(""+newMultiplier);
+		multiplier=newMultiplier;
 		errorInfo=-5;
 		Launcher.machineDatabaseHandler.updateMultiplier(machineId, newMultiplier);
 		logToFile("Changed multiplier - pieces="+number_of_pieces_label.getText()+" error="+error_label.getText(),
@@ -354,7 +354,7 @@ public class Machine {
 		number_of_pieces_label.setText(""+Integer.parseInt(number_of_pieces_label.getText())/multiplier*newMultiplier);
 		pieces_multiplier_label.setText(""+newMultiplier);
 		multiplier=newMultiplier;
-		if (!newArticle.equals("") && !newArticle.equals(null))
+		if (!newArticle.equals("") && !(newArticle==null))
 			article_in_production_label.setText(newArticle);
 		number_of_pieces_label.setText("-1");
 		Launcher.machineDatabaseHandler.updateMultiplier(machineId, newMultiplier);
@@ -408,7 +408,7 @@ public class Machine {
 
 		logToFile(logDescription,timeStamp);
 		Launcher.machineDatabaseHandler.updateMachine(machineId,article_in_production_label.getText(), 
-				number_of_pieces_label.getText(),Integer.parseInt(pieces_multiplier_label.getText()),errorInfo);
+				Integer.parseInt(number_of_pieces_label.getText())/multiplier,multiplier,errorInfo);
 
 	}
 
@@ -429,7 +429,6 @@ public class Machine {
 
 		panel=new JPanel();
 		JLabel machine_id_label=new JLabel("Machine_"+machineId);
-		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(machineId));
 		error_label=new JLabel("Connecting...");
 		article_in_production_label=new JLabel(Launcher.machineDatabaseHandler.getArticleInProduction(machineId));
 		article_in_production_label.addMouseListener(new MouseAdapter(){
@@ -451,6 +450,7 @@ public class Machine {
 				}
 			}
 		});
+		number_of_pieces_label=new JLabel(""+Launcher.machineDatabaseHandler.getNumberOfPieces(machineId));
 		panel.add(machine_id_label);
 		panel.add(article_in_production_label);
 		panel.add(pieces_multiplier_label);
