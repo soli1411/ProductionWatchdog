@@ -44,13 +44,14 @@ public class Charts {
 	/**
 	 * 
 	 * Displays on the GUI a time line chart of the errors that the machines have encountered from startDate to endDate.
+	 * 
 	 * @param machinesToChart
 	 * @param startDate
 	 * @param endDate
 	 * 
 	 */
 	private static void displayTimelineCharts(ArrayList<String> machinesToChart,String startDate, String endDate) {
-		
+
 		for (String machine_id:machinesToChart){
 			JFrame f=new JFrame("Machine_"+machine_id+" timeline chart");
 			TimePeriodValuesCollection timeLineDataset=createTimeLineDataset(machine_id,startDate,endDate);
@@ -74,7 +75,7 @@ public class Charts {
 			f.setExtendedState(ApplicationFrame.MAXIMIZED_BOTH);
 			f.setVisible(true);
 		}
-		
+
 	}
 
 	/**
@@ -84,18 +85,19 @@ public class Charts {
 	 * 
 	 */
 	private static String convertDuration(long duration){
-		
+
 		long seconds=duration/1000L;
 		long minutes=seconds/60L;
 		long hours=minutes/60L;
 		long days=hours/24L; 
 		return String.format("%02d : %02d : %02d : %02d",days,hours%24L,minutes%60L,seconds%60L);
-		
+
 	}
-	
+
 	/**
 	 * 
 	 * Displays a JTable containing the sum of the errors duration divided by article in production.
+	 * 
 	 * @param machineId
 	 * 
 	 */
@@ -158,10 +160,21 @@ public class Charts {
 			JScrollPane jsp=new JScrollPane(table);
 			panel.setLayout(new BorderLayout());
 			panel.add(jsp,BorderLayout.CENTER);
+			JButton button=new JButton("Show in Excel");
+			button.addActionListener(new ActionListener(){
+				@Override
+				public void actionPerformed(ActionEvent ev) {
+					try {
+						Utils.openFile(Utils.writeToExcell(table,"C:/ProductionWatchdog/JTable.xlsx"));
+						frame.dispose();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			});
+			panel.add(button,BorderLayout.SOUTH);
 			frame.setContentPane(panel);
 			frame.setVisible(true);
-
-			Utils.writeToExcell(table,"C:/ProductionWatchdog/JTable.xlsx");
 		}catch(Exception e){
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "ERROR");
@@ -185,7 +198,7 @@ public class Charts {
 	 * 
 	 */
 	private static TimePeriodValuesCollection createTimeLineDataset(String machine_id,String startDate, String endDate) {
-		
+
 		TimePeriodValuesCollection dataset = new TimePeriodValuesCollection();
 		Statement c=null;
 		try {
@@ -225,7 +238,7 @@ public class Charts {
 			e.printStackTrace();
 		}
 		return dataset;
-		
+
 	}
 
 	/**

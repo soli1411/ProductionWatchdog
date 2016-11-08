@@ -1,6 +1,8 @@
 package dev.soli.productionWatchdog.database;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -12,6 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Vector;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -382,6 +385,19 @@ public class MachineDataBaseHandler {
 			JScrollPane jsp = new JScrollPane(table);
 			panel.setLayout(new BorderLayout());
 			panel.add(jsp,BorderLayout.CENTER);
+			JButton button=new JButton("Show in Excel");
+			button.addActionListener(new ActionListener(){
+				@Override
+				public void actionPerformed(ActionEvent ev) {
+					try {
+						Utils.openFile(Utils.writeToExcell(table,"C:/ProductionWatchdog/JTable.xlsx"));
+						frame.dispose();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			});
+			panel.add(button,BorderLayout.SOUTH);
 			frame.setContentPane(panel);
 			frame.setVisible(true);
 		}catch(Exception e){
@@ -395,7 +411,7 @@ public class MachineDataBaseHandler {
 				JOptionPane.showMessageDialog(null, "ERROR CLOSE");
 			}
 		}
-
+		
 	}
 
 }

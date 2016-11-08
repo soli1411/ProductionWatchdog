@@ -323,9 +323,10 @@ public class Utils {
 	 * @param path
 	 * @throws FileNotFoundException
 	 * @throws IOException
+	 * @return the path if the file is saved successfully.
 	 * 
 	 */
-	public static void writeToExcell(JTable table, String path) throws FileNotFoundException, IOException {
+	public static String writeToExcell(JTable table, String path) throws FileNotFoundException, IOException {
 
 		new WorkbookFactory();
 		Workbook wb = new XSSFWorkbook(); //Excel workbook
@@ -345,7 +346,7 @@ public class Utils {
 		}
 		wb.write(new FileOutputStream(path));//Save the file     
 		wb.close();
-		openFile(path);
+		return path;
 
 	}
 
